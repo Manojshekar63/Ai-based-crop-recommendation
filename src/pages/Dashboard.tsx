@@ -6,6 +6,8 @@ import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { ArrowLeft, Calendar, MapPin, Trash2, Eye, BarChart3 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
+import { LanguageSelector } from '@/components/LanguageSelector';
+import { useLanguage } from '@/hooks/useLanguage';
 
 interface SavedAnalysis {
   id: string;
@@ -16,6 +18,7 @@ interface SavedAnalysis {
 }
 
 const Dashboard = () => {
+  const { t } = useLanguage();
   const [savedAnalyses, setSavedAnalyses] = useLocalStorage<SavedAnalysis[]>('saved-analyses', []);
   const [selectedAnalysis, setSelectedAnalysis] = useState<SavedAnalysis | null>(null);
 
@@ -38,6 +41,9 @@ const Dashboard = () => {
     return (
       <div className="min-h-screen bg-gradient-to-br from-background via-accent/10 to-primary/5 py-8 px-4">
         <div className="max-w-6xl mx-auto">
+          <div className="absolute top-4 right-4">
+            <LanguageSelector />
+          </div>
           <div className="flex items-center gap-4 mb-8">
             <Button 
               variant="ghost" 
@@ -45,9 +51,9 @@ const Dashboard = () => {
               className="flex items-center gap-2"
             >
               <ArrowLeft className="h-4 w-4" />
-              Back to Dashboard
+              {t('back_to_dashboard')}
             </Button>
-            <h1 className="text-3xl font-bold">Saved Analysis Details</h1>
+            <h1 className="text-3xl font-bold">{t('saved_analysis_details')}</h1>
           </div>
 
           {/* Analysis Summary */}
@@ -58,22 +64,22 @@ const Dashboard = () => {
                 {selectedAnalysis.name}
               </CardTitle>
               <CardDescription>
-                Saved on {formatDate(selectedAnalysis.createdAt)}
+                {t('saved_on')} {formatDate(selectedAnalysis.createdAt)}
               </CardDescription>
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
-                  <p className="text-sm text-muted-foreground">Location</p>
+                  <p className="text-sm text-muted-foreground">{t('location')}</p>
                   <p className="font-semibold">{selectedAnalysis.formData.location}</p>
                 </div>
                 <div>
-                  <p className="text-sm text-muted-foreground">Soil Type</p>
+                  <p className="text-sm text-muted-foreground">{t('soil_type')}</p>
                   <p className="font-semibold">{selectedAnalysis.formData.soilType}</p>
                 </div>
                 <div>
-                  <p className="text-sm text-muted-foreground">Recommendations</p>
-                  <p className="font-semibold">{selectedAnalysis.results.recommendations.length} crops</p>
+                  <p className="text-sm text-muted-foreground">{t('recommendations')}</p>
+                  <p className="font-semibold">{selectedAnalysis.results.recommendations.length} {t('crops')}</p>
                 </div>
               </div>
             </CardContent>
@@ -88,30 +94,30 @@ const Dashboard = () => {
                     <div>
                       <CardTitle className="text-xl">{crop.name}</CardTitle>
                       <CardDescription>
-                        AI Confidence: {crop.confidence}%
+                        {t('ai_confidence')}: {crop.confidence}%
                       </CardDescription>
                     </div>
                     <Badge variant={crop.profitability === 'High' ? 'default' : 'secondary'}>
-                      {crop.profitability} Profit
+                      {t(crop.profitability === 'High' ? 'high_profit' : crop.profitability === 'Medium' ? 'medium_profit' : 'low_profit')}
                     </Badge>
                   </div>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-2">
                     <div className="flex justify-between">
-                      <span className="text-muted-foreground">Expected Yield:</span>
+                      <span className="text-muted-foreground">{t('expected_yield')}</span>
                       <span className="font-semibold">{crop.expectedYield}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-muted-foreground">Market Price:</span>
+                      <span className="text-muted-foreground">{t('market_price')}</span>
                       <span className="font-semibold">{crop.marketPrice}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-muted-foreground">Season:</span>
+                      <span className="text-muted-foreground">{t('season')}</span>
                       <span className="font-semibold">{crop.season}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-muted-foreground">Duration:</span>
+                      <span className="text-muted-foreground">{t('duration')}</span>
                       <span className="font-semibold">{crop.duration}</span>
                     </div>
                   </div>
@@ -127,6 +133,9 @@ const Dashboard = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-accent/10 to-primary/5 py-8 px-4">
       <div className="max-w-6xl mx-auto">
+        <div className="absolute top-4 right-4">
+          <LanguageSelector />
+        </div>
         <div className="flex items-center gap-4 mb-8">
           <Link to="/">
             <Button 
@@ -134,10 +143,10 @@ const Dashboard = () => {
               className="flex items-center gap-2"
             >
               <ArrowLeft className="h-4 w-4" />
-              Home
+              {t('home')}
             </Button>
           </Link>
-          <h1 className="text-3xl font-bold">My Farm Dashboard</h1>
+          <h1 className="text-3xl font-bold">{t('my_farm_dashboard')}</h1>
         </div>
 
         {/* Stats Cards */}
@@ -150,7 +159,7 @@ const Dashboard = () => {
                 </div>
                 <div>
                   <p className="text-2xl font-bold">{savedAnalyses.length}</p>
-                  <p className="text-muted-foreground">Saved Analyses</p>
+                  <p className="text-muted-foreground">{t('saved_analyses')}</p>
                 </div>
               </div>
             </CardContent>
@@ -166,7 +175,7 @@ const Dashboard = () => {
                   <p className="text-2xl font-bold">
                     {new Set(savedAnalyses.map(a => a.formData.location)).size}
                   </p>
-                  <p className="text-muted-foreground">Locations</p>
+                  <p className="text-muted-foreground">{t('locations')}</p>
                 </div>
               </div>
             </CardContent>
@@ -185,7 +194,7 @@ const Dashboard = () => {
                       : 0
                     }
                   </p>
-                  <p className="text-muted-foreground">Days Since First</p>
+                  <p className="text-muted-foreground">{t('days_since_first')}</p>
                 </div>
               </div>
             </CardContent>
@@ -197,20 +206,20 @@ const Dashboard = () => {
           <Card className="shadow-soft">
             <CardContent className="py-12 text-center">
               <BarChart3 className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-              <h3 className="text-lg font-semibold mb-2">No Saved Analyses</h3>
+              <h3 className="text-lg font-semibold mb-2">{t('no_saved_analyses')}</h3>
               <p className="text-muted-foreground mb-4">
-                Start by creating your first crop recommendation analysis
+                {t('start_first_analysis')}
               </p>
               <Link to="/">
                 <Button className="bg-gradient-earth">
-                  Start Analysis
+                  {t('start_analysis')}
                 </Button>
               </Link>
             </CardContent>
           </Card>
         ) : (
           <div className="space-y-4">
-            <h2 className="text-xl font-semibold">Saved Analyses</h2>
+            <h2 className="text-xl font-semibold">{t('saved_analyses')}</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {savedAnalyses.map((analysis) => (
                 <Card key={analysis.id} className="shadow-soft hover:shadow-glow transition-all duration-300">
@@ -224,31 +233,31 @@ const Dashboard = () => {
                     </CardDescription>
                   </CardHeader>
                   <CardContent>
-                    <div className="space-y-2 mb-4">
-                      <div className="flex justify-between text-sm">
-                        <span className="text-muted-foreground">Soil:</span>
-                        <span>{analysis.formData.soilType}</span>
+                      <div className="space-y-2 mb-4">
+                        <div className="flex justify-between text-sm">
+                          <span className="text-muted-foreground">{t('soil')}</span>
+                          <span>{analysis.formData.soilType}</span>
+                        </div>
+                        <div className="flex justify-between text-sm">
+                          <span className="text-muted-foreground">pH:</span>
+                          <span>{analysis.formData.pH}</span>
+                        </div>
+                        <div className="flex justify-between text-sm">
+                          <span className="text-muted-foreground">{t('crops')}:</span>
+                          <span>{analysis.results.recommendations.length} {t('recommendations')}</span>
+                        </div>
                       </div>
-                      <div className="flex justify-between text-sm">
-                        <span className="text-muted-foreground">pH:</span>
-                        <span>{analysis.formData.pH}</span>
-                      </div>
-                      <div className="flex justify-between text-sm">
-                        <span className="text-muted-foreground">Crops:</span>
-                        <span>{analysis.results.recommendations.length} recommendations</span>
-                      </div>
-                    </div>
                     
                     <div className="flex gap-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setSelectedAnalysis(analysis)}
-                        className="flex-1"
-                      >
-                        <Eye className="h-4 w-4 mr-1" />
-                        View
-                      </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setSelectedAnalysis(analysis)}
+                          className="flex-1"
+                        >
+                          <Eye className="h-4 w-4 mr-1" />
+                          {t('view')}
+                        </Button>
                       <Button
                         variant="outline"
                         size="sm"

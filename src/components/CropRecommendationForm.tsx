@@ -5,6 +5,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { MapPin, Droplets, Thermometer, Wind } from "lucide-react";
+import { useLanguage } from "@/hooks/useLanguage";
 
 interface FormData {
   location: string;
@@ -24,6 +25,7 @@ interface CropRecommendationFormProps {
 }
 
 export const CropRecommendationForm = ({ onSubmit, isLoading }: CropRecommendationFormProps) => {
+  const { t } = useLanguage();
   const [formData, setFormData] = useState<FormData>({
     location: "",
     soilType: "",
@@ -49,10 +51,10 @@ export const CropRecommendationForm = ({ onSubmit, isLoading }: CropRecommendati
     <Card className="w-full max-w-2xl mx-auto shadow-soft">
       <CardHeader className="text-center">
         <CardTitle className="text-2xl font-bold bg-gradient-earth bg-clip-text text-transparent">
-          Crop Recommendation Analysis
+          {t('crop_recommendation_analysis')}
         </CardTitle>
         <CardDescription>
-          Enter your farm details to get AI-powered crop recommendations
+          {t('enter_farm_details')}
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -61,10 +63,10 @@ export const CropRecommendationForm = ({ onSubmit, isLoading }: CropRecommendati
           <div className="space-y-4">
             <div className="flex items-center gap-2">
               <MapPin className="h-5 w-5 text-primary" />
-              <Label className="text-base font-semibold">Location</Label>
+              <Label className="text-base font-semibold">{t('location')}</Label>
             </div>
             <div>
-              <Label htmlFor="location">Farm Location</Label>
+              <Label htmlFor="location">{t('farm_location')}</Label>
               <Input
                 id="location"
                 placeholder="e.g., Punjab, India"
@@ -77,21 +79,21 @@ export const CropRecommendationForm = ({ onSubmit, isLoading }: CropRecommendati
 
           {/* Soil Properties Section */}
           <div className="space-y-4">
-            <Label className="text-base font-semibold">Soil Properties</Label>
+            <Label className="text-base font-semibold">{t('soil_properties')}</Label>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="soilType">Soil Type</Label>
+                <Label htmlFor="soilType">{t('soil_type')}</Label>
                 <Select onValueChange={(value) => handleInputChange("soilType", value)}>
                   <SelectTrigger>
-                    <SelectValue placeholder="Select soil type" />
+                    <SelectValue placeholder={t('select_soil_type')} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="sandy">Sandy</SelectItem>
-                    <SelectItem value="loamy">Loamy</SelectItem>
-                    <SelectItem value="clay">Clay</SelectItem>
-                    <SelectItem value="silt">Silt</SelectItem>
-                    <SelectItem value="peaty">Peaty</SelectItem>
-                    <SelectItem value="chalky">Chalky</SelectItem>
+                    <SelectItem value="sandy">{t('sandy')}</SelectItem>
+                    <SelectItem value="loamy">{t('loamy')}</SelectItem>
+                    <SelectItem value="clay">{t('clay')}</SelectItem>
+                    <SelectItem value="silt">{t('silt')}</SelectItem>
+                    <SelectItem value="peaty">{t('peaty')}</SelectItem>
+                    <SelectItem value="chalky">{t('chalky')}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -147,12 +149,12 @@ export const CropRecommendationForm = ({ onSubmit, isLoading }: CropRecommendati
 
           {/* Climate Data Section */}
           <div className="space-y-4">
-            <Label className="text-base font-semibold">Climate Conditions</Label>
+            <Label className="text-base font-semibold">{t('climate_conditions')}</Label>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
                 <div className="flex items-center gap-2 mb-2">
                   <Droplets className="h-4 w-4 text-blue-500" />
-                  <Label htmlFor="rainfall">Annual Rainfall (mm)</Label>
+                  <Label htmlFor="rainfall">{t('annual_rainfall')}</Label>
                 </div>
                 <Input
                   id="rainfall"
@@ -166,7 +168,7 @@ export const CropRecommendationForm = ({ onSubmit, isLoading }: CropRecommendati
               <div>
                 <div className="flex items-center gap-2 mb-2">
                   <Thermometer className="h-4 w-4 text-red-500" />
-                  <Label htmlFor="temperature">Avg Temperature (°C)</Label>
+                  <Label htmlFor="temperature">{t('avg_temperature')}</Label>
                 </div>
                 <Input
                   id="temperature"
@@ -180,7 +182,7 @@ export const CropRecommendationForm = ({ onSubmit, isLoading }: CropRecommendati
               <div>
                 <div className="flex items-center gap-2 mb-2">
                   <Wind className="h-4 w-4 text-gray-500" />
-                  <Label htmlFor="humidity">Humidity (%)</Label>
+                  <Label htmlFor="humidity">{t('humidity')}</Label>
                 </div>
                 <Input
                   id="humidity"
@@ -201,7 +203,7 @@ export const CropRecommendationForm = ({ onSubmit, isLoading }: CropRecommendati
             className="w-full bg-gradient-earth hover:shadow-glow transition-all duration-300"
             disabled={isLoading}
           >
-            {isLoading ? "Analyzing..." : "Get Crop Recommendations"}
+            {isLoading ? t('analyzing') : t('get_crop_recommendations')}
           </Button>
         </form>
       </CardContent>

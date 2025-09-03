@@ -9,6 +9,8 @@ import { SaveAnalysisButton } from "@/components/SaveAnalysisButton";
 import { CropComparisonChart } from "@/components/CropComparisonChart";
 import { ExportButton } from "@/components/ExportButton";
 import { OnboardingTour } from "@/components/OnboardingTour";
+import { LanguageSelector } from "@/components/LanguageSelector";
+import { useLanguage } from "@/hooks/useLanguage";
 import heroImage from "@/assets/hero-farm.jpg";
 
 interface FormData {
@@ -24,6 +26,7 @@ interface FormData {
 }
 
 const Index = () => {
+  const { t } = useLanguage();
   const [currentStep, setCurrentStep] = useState<"welcome" | "form" | "results">("welcome");
   const [isLoading, setIsLoading] = useState(false);
   const [results, setResults] = useState<any>(null);
@@ -54,13 +57,16 @@ const Index = () => {
     return (
       <div className="min-h-screen bg-gradient-to-br from-background via-accent/10 to-primary/5">
         {/* Navigation */}
-        <div className="absolute top-4 right-4 z-20" data-tour="dashboard">
-          <Link to="/dashboard">
-            <Button variant="outline" className="bg-white/90 backdrop-blur-sm">
-              <FileBarChart className="h-4 w-4 mr-2" />
-              Dashboard
-            </Button>
-          </Link>
+        <div className="absolute top-4 right-4 z-20 flex items-center gap-2">
+          <LanguageSelector />
+          <div data-tour="dashboard">
+            <Link to="/dashboard">
+              <Button variant="outline" className="bg-white/90 backdrop-blur-sm">
+                <FileBarChart className="h-4 w-4 mr-2" />
+                {t('dashboard')}
+              </Button>
+            </Link>
+          </div>
         </div>
 
         {/* Hero Section */}
@@ -73,11 +79,10 @@ const Index = () => {
             <div className="relative z-10 h-full flex items-center justify-center text-center text-white px-4">
               <div className="max-w-4xl">
                 <h1 className="text-5xl md:text-6xl font-bold mb-6">
-                  Smart Crop Recommendations
+                  {t('smart_crop_recommendations')}
                 </h1>
                 <p className="text-xl md:text-2xl mb-8 text-white/90">
-                  AI-powered insights for modern farmers. Get personalized crop recommendations 
-                  based on your soil conditions, climate, and market trends.
+                  {t('hero_subtitle')}
                 </p>
                 <Button 
                   size="lg" 
@@ -85,7 +90,7 @@ const Index = () => {
                   className="bg-gradient-earth hover:shadow-glow transition-all duration-300 text-lg px-8 py-3"
                   data-tour="start-analysis"
                 >
-                  Start Analysis
+                  {t('start_analysis')}
                   <Brain className="ml-2 h-5 w-5" />
                 </Button>
               </div>
@@ -97,16 +102,16 @@ const Index = () => {
         <div className="py-16 px-4" data-tour="features">
           <div className="max-w-6xl mx-auto">
             <h2 className="text-3xl font-bold text-center mb-12">
-              How Our AI Helps You
+              {t('how_ai_helps')}
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
               <div className="text-center p-6 rounded-xl bg-card shadow-soft hover:shadow-glow transition-all duration-300">
                 <div className="mx-auto w-16 h-16 bg-gradient-earth rounded-full flex items-center justify-center mb-4">
                   <Leaf className="h-8 w-8 text-white" />
                 </div>
-                <h3 className="text-xl font-semibold mb-3">Soil Analysis</h3>
+                <h3 className="text-xl font-semibold mb-3">{t('soil_analysis')}</h3>
                 <p className="text-muted-foreground">
-                  Analyze soil pH, nutrients (NPK), and composition to match optimal crop requirements
+                  {t('soil_analysis_desc')}
                 </p>
               </div>
               
@@ -114,9 +119,9 @@ const Index = () => {
                 <div className="mx-auto w-16 h-16 bg-gradient-sky rounded-full flex items-center justify-center mb-4">
                   <Brain className="h-8 w-8 text-white" />
                 </div>
-                <h3 className="text-xl font-semibold mb-3">AI Predictions</h3>
+                <h3 className="text-xl font-semibold mb-3">{t('ai_predictions')}</h3>
                 <p className="text-muted-foreground">
-                  Machine learning algorithms analyze weather patterns and predict best crop matches
+                  {t('ai_predictions_desc')}
                 </p>
               </div>
               
@@ -124,9 +129,9 @@ const Index = () => {
                 <div className="mx-auto w-16 h-16 bg-gradient-field rounded-full flex items-center justify-center mb-4">
                   <BarChart3 className="h-8 w-8 text-white" />
                 </div>
-                <h3 className="text-xl font-semibold mb-3">Market Insights</h3>
+                <h3 className="text-xl font-semibold mb-3">{t('market_insights')}</h3>
                 <p className="text-muted-foreground">
-                  Real-time market prices and profitability analysis for informed decision making
+                  {t('market_insights_desc')}
                 </p>
               </div>
             </div>
@@ -142,6 +147,9 @@ const Index = () => {
     return (
       <div className="min-h-screen bg-gradient-to-br from-background via-accent/10 to-primary/5 py-8 px-4">
         <div className="max-w-4xl mx-auto">
+          <div className="absolute top-4 right-4">
+            <LanguageSelector />
+          </div>
           <div className="flex items-center gap-4 mb-8">
             <Button 
               variant="ghost" 
@@ -149,9 +157,9 @@ const Index = () => {
               className="flex items-center gap-2"
             >
               <ArrowLeft className="h-4 w-4" />
-              Back
+              {t('back')}
             </Button>
-            <h1 className="text-3xl font-bold">Farm Analysis</h1>
+            <h1 className="text-3xl font-bold">{t('farm_analysis')}</h1>
           </div>
           
           <CropRecommendationForm 
@@ -166,6 +174,9 @@ const Index = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-accent/10 to-primary/5 py-8 px-4">
       <div className="max-w-7xl mx-auto">
+        <div className="absolute top-4 right-4">
+          <LanguageSelector />
+        </div>
         <div className="flex items-center justify-between mb-8">
           <div className="flex items-center gap-4">
             <Button 
@@ -174,9 +185,9 @@ const Index = () => {
               className="flex items-center gap-2"
             >
               <ArrowLeft className="h-4 w-4" />
-              New Analysis
+              {t('new_analysis')}
             </Button>
-            <h1 className="text-3xl font-bold">Crop Recommendations</h1>
+            <h1 className="text-3xl font-bold">{t('crop_recommendations')}</h1>
           </div>
           
           {results && formData && (
@@ -191,7 +202,7 @@ const Index = () => {
                 className="gap-2"
               >
                 <BarChart3 className="h-4 w-4" />
-                {showComparison ? 'Hide' : 'Show'} Comparison
+                {showComparison ? t('hide_comparison') : t('show_comparison')}
               </Button>
             </div>
           )}
