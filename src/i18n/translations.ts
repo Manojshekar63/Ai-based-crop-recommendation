@@ -314,5 +314,237 @@ export const translations = {
     en: "View",
     hi: "देखें",
     kn: "ನೋಡಿ"
+  },
+
+  // New Location & Option Selection
+  automatic_recommendations: {
+    en: "Get recommendations from my exact location",
+    hi: "मेरे सटीक स्थान से सिफारिशें प्राप्त करें",
+    kn: "ನನ್ನ ನಿಖರ ಸ್ಥಳದಿಂದ ಶಿಫಾರಸುಗಳನ್ನು ಪಡೆಯಿರಿ"
+  },
+  manual_input: {
+    en: "Enter details manually",
+    hi: "विवरण मैन्युअल रूप से दर्ज करें",
+    kn: "ವಿವರಗಳನ್ನು ಹಸ್ತಚಾಲಿತವಾಗಿ ನಮೂದಿಸಿ"
+  },
+  choose_option: {
+    en: "Choose Your Option",
+    hi: "अपना विकल्प चुनें",
+    kn: "ನಿಮ್ಮ ಆಯ್ಕೆಯನ್ನು ಆರಿಸಿ"
+  },
+  automatic_detection_description: {
+    en: "We'll automatically detect your location and fetch soil & climate data",
+    hi: "हम स्वचालित रूप से आपका स्थान पता लगाएंगे और मिट्टी और जलवायु डेटा प्राप्त करेंगे",
+    kn: "ನಾವು ಸ್ವಯಂಚಾಲಿತವಾಗಿ ನಿಮ್ಮ ಸ್ಥಳವನ್ನು ಪತ್ತೆ ಮಾಡಿ ಮಣ್ಣು ಮತ್ತು ಹವಾಮಾನ ಡೇಟಾವನ್ನು ಪಡೆಯುತ್ತೇವೆ"
+  },
+  manual_input_description: {
+    en: "Manually enter your farm's soil and climate details",
+    hi: "अपने खेत की मिट्टी और जलवायु का विवरण मैन्युअल रूप से दर्ज करें",
+    kn: "ನಿಮ್ಮ ಕೃಷಿಯ ಮಣ್ಣು ಮತ್ತು ಹವಾಮಾನದ ವಿವರಗಳನ್ನು ಹಸ್ತಚಾಲಿತವಾಗಿ ನಮೂದಿಸಿ"
+  },
+  detecting_location: {
+    en: "Detecting Your Location",
+    hi: "आपका स्थान खोजा जा रहा है",
+    kn: "ನಿಮ್ಮ ಸ್ಥಳವನ್ನು ಪತ್ತೆ ಮಾಡಲಾಗುತ್ತಿದೆ"
+  },
+  allow_location_access: {
+    en: "Please allow location access when prompted",
+    hi: "कृपया प्रेरित होने पर स्थान पहुंच की अनुमति दें",
+    kn: "ಕೇಳಿದಾಗ ದಯವಿಟ್ಟು ಸ್ಥಳ ಪ್ರವೇಶಕ್ಕೆ ಅನುಮತಿ ನೀಡಿ"
+  },
+  fetching_soil_climate_data: {
+    en: "Fetching Soil & Climate Data",
+    hi: "मिट्टी और जलवायु डेटा प्राप्त कर रहे हैं",
+    kn: "ಮಣ್ಣು ಮತ್ತು ಹವಾಮಾನ ಡೇಟಾವನ್ನು ಪಡೆಯುತ್ತಿದ್ದೇವೆ"
+  },
+  analyzing_your_location: {
+    en: "Analyzing your location's agricultural conditions",
+    hi: "आपके स्थान की कृषि स्थितियों का विश्लेषण कर रहे हैं",
+    kn: "ನಿಮ್ಮ ಸ್ಥಳದ ಕೃಷಿ ಪರಿಸ್ಥಿತಿಗಳನ್ನು ವಿಶ್ಲೇಷಿಸುತ್ತಿದ್ದೇವೆ"
+  },
+  location_data_detected: {
+    en: "Location Data Detected",
+    hi: "स्थान डेटा का पता चला",
+    kn: "ಸ್ಥಳ ಡೇಟಾ ಪತ್ತೆಯಾಗಿದೆ"
+  },
+  detected_location_description: {
+    en: "We've analyzed your location and detected the following soil and climate conditions",
+    hi: "हमने आपके स्थान का विश्लेषण किया है और निम्नलिखित मिट्टी और जलवायु स्थितियों का पता लगाया है",
+    kn: "ನಾವು ನಿಮ್ಮ ಸ್ಥಳವನ್ನು ವಿಶ್ಲೇಷಿಸಿದ್ದೇವೆ ಮತ್ತು ಈ ಕೆಳಗಿನ ಮಣ್ಣು ಮತ್ತು ಹವಾಮಾನ ಪರಿಸ್ಥಿತಿಗಳನ್ನು ಪತ್ತೆ ಮಾಡಿದ್ದೇವೆ"
+  },
+  detected_soil_properties: {
+    en: "Detected Soil Properties",
+    hi: "पता लगाए गए मिट्टी के गुण",
+    kn: "ಪತ್ತೆಯಾದ ಮಣ್ಣಿನ ಗುಣಗಳು"
+  },
+  detected_climate_conditions: {
+    en: "Detected Climate Conditions",
+    hi: "पता लगाई गई जलवायु स्थितियां",
+    kn: "ಪತ್ತೆಯಾದ ಹವಾಮಾನ ಪರಿಸ್ಥಿತಿಗಳು"
+  },
+  level: {
+    en: "Level",
+    hi: "स्तर",
+    kn: "ಮಟ್ಟ"
+  },
+  acidic: {
+    en: "Acidic",
+    hi: "अम्लीय",
+    kn: "ಆಮ್ಲೀಯ"
+  },
+  alkaline: {
+    en: "Alkaline",
+    hi: "क्षारीय",
+    kn: "ಕ್ಷಾರೀಯ"
+  },
+  neutral: {
+    en: "Neutral",
+    hi: "तटस्थ",
+    kn: "ತಟಸ್ಥ"
+  },
+  soil_texture: {
+    en: "Soil Texture",
+    hi: "मिट्टी की बनावट",
+    kn: "ಮಣ್ಣಿನ ರಚನೆ"
+  },
+  organic_carbon: {
+    en: "Organic Carbon",
+    hi: "जैविक कार्बन",
+    kn: "ಸಾವಯವ ಇಂಗಾಲ"
+  },
+  detect_again: {
+    en: "Detect Again",
+    hi: "फिर से खोजें",
+    kn: "ಮತ್ತೆ ಪತ್ತೆ ಮಾಡಿ"
+  },
+  automatic_location_detection: {
+    en: "Automatic Location Detection",
+    hi: "स्वचालित स्थान खोज",
+    kn: "ಸ್ವಯಂಚಾಲಿತ ಸ್ಥಳ ಪತ್ತೆ"
+  },
+  what_we_detect: {
+    en: "What we'll detect:",
+    hi: "हम क्या खोजेंगे:",
+    kn: "ನಾವು ಏನನ್ನು ಪತ್ತೆ ಮಾಡುತ್ತೇವೆ:"
+  },
+  exact_coordinates: {
+    en: "Your exact farm coordinates",
+    hi: "आपके खेत के सटीक निर्देशांक",
+    kn: "ನಿಮ್ಮ ಸಂಪೂರ್ಣ ಕೃಷಿಯ ನಿರ್ದೇಶಾಂಕಗಳು"
+  },
+  soil_ph_nutrients: {
+    en: "Soil pH and nutrient levels",
+    hi: "मिट्टी का pH और पोषक तत्व स्तर",
+    kn: "ಮಣ್ಣಿನ pH ಮತ್ತು ಪೋಷಕಾಂಶದ ಮಟ್ಟಗಳು"
+  },
+  local_climate_data: {
+    en: "Local climate and weather patterns",
+    hi: "स्थानीय जलवायु और मौसम पैटर्न",
+    kn: "ಸ್ಥಳೀಯ ಹವಾಮಾನ ಮತ್ತು ಹವಾಮಾನ ಮಾದರಿಗಳು"
+  },
+  soil_texture_composition: {
+    en: "Soil texture and composition",
+    hi: "मिट्टी की बनावट और संरचना",
+    kn: "ಮಣ್ಣಿನ ರಚನೆ ಮತ್ತು ಸಂಯೋಜನೆ"
+  },
+  detect_my_location: {
+    en: "Detect My Location",
+    hi: "मेरा स्थान खोजें",
+    kn: "ನನ್ನ ಸ್ಥಳವನ್ನು ಪತ್ತೆ ಮಾಡಿ"
+  },
+  geolocation_not_supported: {
+    en: "Geolocation is not supported by this browser",
+    hi: "इस ब्राउज़र द्वारा भौगोलिक स्थान समर्थित नहीं है",
+    kn: "ಈ ಬ್ರೌಸರ್‌ನಿಂದ ಭೌಗೋಳಿಕ ಸ್ಥಳವು ಬೆಂಬಲಿತವಾಗಿಲ್ಲ"
+  },
+  error_fetching_data: {
+    en: "Error fetching data. Please try again or use manual input.",
+    hi: "डेटा प्राप्त करने में त्रुटि। कृपया पुनः प्रयास करें या मैन्युअल इनपुट का उपयोग करें।",
+    kn: "ಡೇಟಾ ಪಡೆಯುವಲ್ಲಿ ದೋಷ. ದಯವಿಟ್ಟು ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ ಅಥವಾ ಹಸ್ತಚಾಲಿತ ಇನ್‌ಪುಟ್ ಬಳಸಿ."
+  },
+  location_permission_denied: {
+    en: "Location access denied. Please allow location access or use manual input.",
+    hi: "स्थान पहुंच से इनकार। कृपया स्थान पहुंच की अनुमति दें या मैन्युअल इनपुट का उपयोग करें।",
+    kn: "ಸ್ಥಳ ಪ್ರವೇಶ ನಿರಾಕರಿಸಲಾಗಿದೆ. ದಯವಿಟ್ಟು ಸ್ಥಳ ಪ್ರವೇಶಕ್ಕೆ ಅನುಮತಿ ನೀಡಿ ಅಥವಾ ಹಸ್ತಚಾಲಿತ ಇನ್‌ಪುಟ್ ಬಳಸಿ."
+  },
+  location_unavailable: {
+    en: "Location information unavailable.",
+    hi: "स्थान की जानकारी उपलब्ध नहीं है।",
+    kn: "ಸ್ಥಳದ ಮಾಹಿತಿ ಲಭ್ಯವಿಲ್ಲ."
+  },
+  location_timeout: {
+    en: "Location request timed out.",
+    hi: "स्थान अनुरोध का समय समाप्त हो गया।",
+    kn: "ಸ್ಥಳ ವಿನಂತಿಯು ಸಮಯ ಮೀರಿದೆ."
+  },
+  location_unknown_error: {
+    en: "Unknown error occurred while getting location.",
+    hi: "स्थान प्राप्त करते समय अज्ञात त्रुटि हुई।",
+    kn: "ಸ್ಥಳವನ್ನು ಪಡೆಯುವಾಗ ಅಜ್ಞಾತ ದೋಷ ಸಂಭವಿಸಿದೆ."
+  },
+  select_preferred_method: {
+    en: "Select your preferred method to get crop recommendations",
+    hi: "फसल की सिफारिशें प्राप्त करने के लिए अपनी पसंदीदा विधि चुनें",
+    kn: "ಬೆಳೆ ಶಿಫಾರಸುಗಳನ್ನು ಪಡೆಯಲು ನಿಮ್ಮ ಆದ್ಯತೆಯ ವಿಧಾನವನ್ನು ಆಯ್ಕೆ ಮಾಡಿ"
+  },
+  instant_analysis: {
+    en: "Instant soil & climate analysis",
+    hi: "तत्काल मिट्टी और जलवायु विश्लेषण",
+    kn: "ತತ್ಕ್ಷಣ ಮಣ್ಣು ಮತ್ತು ಹವಾಮಾನ ವಿಶ್ಲೇಷಣೆ"
+  },
+  saves_time: {
+    en: "Saves time - no manual data entry",
+    hi: "समय बचाता है - कोई मैन्युअल डेटा एंट्री नहीं",
+    kn: "ಸಮಯವನ್ನು ಉಳಿಸುತ್ತದೆ - ಯಾವುದೇ ಹಸ್ತಚಾಲಿತ ಡೇಟಾ ಎಂಟ್ರಿ ಇಲ್ಲ"
+  },
+  precise_location_data: {
+    en: "Precise location-based data",
+    hi: "सटीक स्थान-आधारित डेटा",
+    kn: "ನಿಖರವಾದ ಸ್ಥಳ-ಆಧಾರಿತ ಡೇಟಾ"
+  },
+  use_automatic_detection: {
+    en: "Use Automatic Detection",
+    hi: "स्वचालित खोज का उपयोग करें",
+    kn: "ಸ್ವಯಂಚಾಲಿತ ಪತ್ತೆಯನ್ನು ಬಳಸಿ"
+  },
+  full_control: {
+    en: "Full control over input data",
+    hi: "इनपुट डेटा पर पूर्ण नियंत्रण",
+    kn: "ಇನ್‌ಪುಟ್ ಡೇಟಾದ ಮೇಲೆ ಸಂಪೂರ್ಣ ನಿಯಂತ್ರಣ"
+  },
+  no_location_needed: {
+    en: "No location access needed",
+    hi: "स्थान पहुंच की आवश्यकता नहीं",
+    kn: "ಯಾವುದೇ ಸ್ಥಳ ಪ್ರವೇಶದ ಅಗತ್ಯವಿಲ್ಲ"
+  },
+  custom_parameters: {
+    en: "Custom soil & climate parameters",
+    hi: "कस्टम मिट्टी और जलवायु पैरामीटर",
+    kn: "ಕಸ್ಟಮ್ ಮಣ್ಣು ಮತ್ತು ಹವಾಮಾನ ಪ್ಯಾರಾಮೀಟರ್‌ಗಳು"
+  },
+  use_manual_input: {
+    en: "Use Manual Input",
+    hi: "मैन्युअल इनपुट का उपयोग करें",
+    kn: "ಹಸ್ತಚಾಲಿತ ಇನ್‌ಪುಟ್ ಬಳಸಿ"
+  },
+  nitrogen: {
+    en: "Nitrogen",
+    hi: "नाइट्रोजन",
+    kn: "ಸಾರಜನಕ"
+  },
+  phosphorus: {
+    en: "Phosphorus",
+    hi: "फास्फोरस",
+    kn: "ರಂಜಕ"
+  },
+  potassium: {
+    en: "Potassium",
+    hi: "पोटैशियम",
+    kn: "ಪೊಟ್ಯಾಸಿಯಮ್"
+  },
+  temperature: {
+    en: "Temperature",
+    hi: "तापमान",
+    kn: "ತಾಪಮಾನ"
   }
 };

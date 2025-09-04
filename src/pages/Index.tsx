@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { CropRecommendationForm } from "@/components/CropRecommendationForm";
 import { CropRecommendations } from "@/components/CropRecommendations";
+import { LocationDetectionForm } from "@/components/LocationDetectionForm";
+import { OptionSelector } from "@/components/OptionSelector";
 import { generateCropRecommendations } from "@/utils/cropRecommendation";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Leaf, Brain, BarChart3, FileBarChart } from "lucide-react";
@@ -27,7 +29,7 @@ interface FormData {
 
 const Index = () => {
   const { t } = useLanguage();
-  const [currentStep, setCurrentStep] = useState<"welcome" | "form" | "results">("welcome");
+  const [currentStep, setCurrentStep] = useState<"welcome" | "options" | "automatic" | "manual" | "results">("welcome");
   const [isLoading, setIsLoading] = useState(false);
   const [results, setResults] = useState<any>(null);
   const [formData, setFormData] = useState<FormData | null>(null);
@@ -46,11 +48,42 @@ const Index = () => {
     }, 2000);
   };
 
+  const handleLocationSubmit = async (locationData: any) => {
+    setIsLoading(true);
+    
+    // Convert location data to FormData format
+    const convertedFormData: FormData = {
+      location: locationData.location,
+      soilType: locationData.soilData.soilTexture,
+      pH: locationData.soilData.pH.toString(),
+      nitrogen: locationData.soilData.nitrogen.toString(),
+      phosphorus: locationData.soilData.phosphorus.toString(),
+      potassium: locationData.soilData.potassium.toString(),
+      rainfall: locationData.climateData.rainfall.toString(),
+      temperature: locationData.climateData.temperature.toString(),
+      humidity: locationData.climateData.humidity.toString(),
+    };
+    
+    setFormData(convertedFormData);
+    
+    // Simulate AI processing delay
+    setTimeout(() => {
+      const recommendations = generateCropRecommendations(convertedFormData);
+      setResults(recommendations);
+      setCurrentStep("results");
+      setIsLoading(false);
+    }, 2000);
+  };
+
   const resetToWelcome = () => {
     setCurrentStep("welcome");
     setResults(null);
     setFormData(null);
     setShowComparison(false);
+  };
+
+  const goToOptions = () => {
+    setCurrentStep("options");
   };
 
   if (currentStep === "welcome") {
@@ -86,7 +119,7 @@ const Index = () => {
                 </p>
                 <Button 
                   size="lg" 
-                  onClick={() => setCurrentStep("form")}
+                  onClick={goToOptions}
                   className="bg-gradient-earth hover:shadow-glow transition-all duration-300 text-lg px-8 py-3"
                   data-tour="start-analysis"
                 >
@@ -143,7 +176,62 @@ const Index = () => {
     );
   }
 
-  if (currentStep === "form") {
+  if (currentStep === "options") {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-background via-accent/10 to-primary/5 py-8 px-4">
+        <div className="max-w-7xl mx-auto">
+          <div className="absolute top-4 right-4">
+            <LanguageSelector />
+          </div>
+          <div className="flex items-center gap-4 mb-8">
+            <Button 
+              variant="ghost" 
+              onClick={resetToWelcome}
+              className="flex items-center gap-2"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              {t('back')}
+            </Button>
+          </div>
+          
+          <OptionSelector 
+            onSelectAutomatic={() => setCurrentStep("automatic")}
+            onSelectManual={() => setCurrentStep("manual")}
+          />
+        </div>
+      </div>
+    );
+  }
+
+  if (currentStep === "automatic") {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-background via-accent/10 to-primary/5 py-8 px-4">
+        <div className="max-w-7xl mx-auto">
+          <div className="absolute top-4 right-4">
+            <LanguageSelector />
+          </div>
+          <div className="flex items-center gap-4 mb-8">
+            <Button 
+              variant="ghost" 
+              onClick={() => setCurrentStep("options")}
+              className="flex items-center gap-2"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              {t('back')}
+            </Button>
+            <h1 className="text-3xl font-bold">{t('automatic_location_detection')}</h1>
+          </div>
+          
+          <LocationDetectionForm 
+            onSubmit={handleLocationSubmit} 
+            isLoading={isLoading}
+          />
+        </div>
+      </div>
+    );
+  }
+
+  if (currentStep === "manual") {
     return (
       <div className="min-h-screen bg-gradient-to-br from-background via-accent/10 to-primary/5 py-8 px-4">
         <div className="max-w-4xl mx-auto">
@@ -153,7 +241,7 @@ const Index = () => {
           <div className="flex items-center gap-4 mb-8">
             <Button 
               variant="ghost" 
-              onClick={resetToWelcome}
+              onClick={() => setCurrentStep("options")}
               className="flex items-center gap-2"
             >
               <ArrowLeft className="h-4 w-4" />
@@ -181,7 +269,7 @@ const Index = () => {
           <div className="flex items-center gap-4">
             <Button 
               variant="ghost" 
-              onClick={() => setCurrentStep("form")}
+              onClick={() => setCurrentStep("options")}
               className="flex items-center gap-2"
             >
               <ArrowLeft className="h-4 w-4" />
