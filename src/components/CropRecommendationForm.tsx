@@ -43,77 +43,109 @@ export const CropRecommendationForm = ({ onSubmit, isLoading }: CropRecommendati
   const fetchLocationData = async (locationQuery: string) => {
     setIsDataLoading(true);
     try {
-      // First, get coordinates from the location
-      const geoResponse = await fetch(
-        `https://api.openweathermap.org/geo/1.0/direct?q=${encodeURIComponent(locationQuery)}&limit=1&appid=${import.meta.env.VITE_OPENWEATHER_API_KEY}`
-      );
-      
-      if (!geoResponse.ok) {
-        throw new Error('Failed to geocode location');
+      // Determine OpenWeather API key from localStorage or env
+      const keyFromStorage = (() => {
+        try {
+          return window.localStorage.getItem('openweather_api_key') || undefined;
+        } catch {
+          return undefined;
+        }
+      })();
+      // Note: env vars may be undefined in this environment
+      const keyFromEnv = (import.meta as any)?.env?.VITE_OPENWEATHER_API_KEY as string | undefined;
+      const OPENWEATHER_API_KEY = keyFromStorage || keyFromEnv;
+
+      // 1) Geocode: Use OpenWeather geocoding if API key exists, otherwise fallback to Nominatim (no key)
+      let lat: number, lon: number, resolvedLabel = locationQuery;
+      if (OPENWEATHER_API_KEY) {
+        const geoResponse = await fetch(
+          `https://api.openweathermap.org/geo/1.0/direct?q=${encodeURIComponent(locationQuery)}&limit=1&appid=${OPENWEATHER_API_KEY}`
+        );
+        if (!geoResponse.ok) throw new Error('Failed to geocode location (OpenWeather)');
+        const geoData = await geoResponse.json();
+        if (!geoData || geoData.length === 0) throw new Error('Location not found');
+        lat = geoData[0].lat;
+        lon = geoData[0].lon;
+        resolvedLabel = [geoData[0].name, geoData[0].state, geoData[0].country].filter(Boolean).join(', ');
+      } else {
+        const nominatim = await fetch(
+          `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(locationQuery)}&limit=1&addressdetails=1`,
+          { headers: { 'Accept-Language': 'en', 'User-Agent': 'Lovable-Crop-App/1.0' } }
+        );
+        if (!nominatim.ok) throw new Error('Failed to geocode location (Nominatim)');
+        const geo = await nominatim.json();
+        if (!geo || geo.length === 0) throw new Error('Location not found');
+        lat = parseFloat(geo[0].lat);
+        lon = parseFloat(geo[0].lon);
+        resolvedLabel = geo[0].display_name || resolvedLabel;
       }
-      
-      const geoData = await geoResponse.json();
-      if (!geoData || geoData.length === 0) {
-        throw new Error('Location not found');
-      }
-      
-      const { lat, lon } = geoData[0];
-      
-      // Fetch soil data from SoilGrids API
+
+      // 2) Fetch soil data from SoilGrids API
       const soilResponse = await fetch(
         `https://rest.isric.org/soilgrids/v2.0/properties?lon=${lon}&lat=${lat}&property=phh2o&property=nitrogen&property=soc&property=clay&depth=0-5cm&value=mean`
       );
-      
-      // Fetch weather data from OpenWeatherMap
-      const weatherResponse = await fetch(
-        `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&appid=${import.meta.env.VITE_OPENWEATHER_API_KEY}&units=metric`
-      );
-      
-      if (!soilResponse.ok || !weatherResponse.ok) {
-        throw new Error('Failed to fetch environmental data');
+
+      // 3) Fetch weather data: Prefer OpenWeather if key exists, else fallback to Open-Meteo (no key)
+      let temperatureC = '25';
+      let humidityPct = '70';
+      let rainfallMm = '0';
+      if (OPENWEATHER_API_KEY) {
+        const weatherResponse = await fetch(
+          `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&appid=${OPENWEATHER_API_KEY}&units=metric`
+        );
+        if (!weatherResponse.ok) throw new Error('Failed to fetch weather data (OpenWeather)');
+        const weatherData = await weatherResponse.json();
+        temperatureC = String(Math.round(weatherData.main?.temp ?? 25));
+        humidityPct = String(Math.round(weatherData.main?.humidity ?? 70));
+        // OpenWeather current rain (last 1h) if available
+        rainfallMm = String(weatherData.rain?.['1h'] ?? 0);
+      } else {
+        const openMeteo = await fetch(
+          `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,relative_humidity_2m,precipitation&timezone=auto`
+        );
+        if (!openMeteo.ok) throw new Error('Failed to fetch weather data (Open-Meteo)');
+        const meteo = await openMeteo.json();
+        temperatureC = String(Math.round(meteo.current?.temperature_2m ?? 25));
+        humidityPct = String(Math.round(meteo.current?.relative_humidity_2m ?? 70));
+        rainfallMm = String(meteo.current?.precipitation ?? 0);
       }
-      
+
+      if (!soilResponse.ok) throw new Error('Failed to fetch soil data');
       const soilData = await soilResponse.json();
-      const weatherData = await weatherResponse.json();
-      
-      // Extract and process soil data
-      const properties = soilData.properties;
-      const pH = properties.phh2o ? (properties.phh2o.depths[0].values.mean / 10).toFixed(1) : "6.5";
-      const nitrogen = properties.nitrogen ? (properties.nitrogen.depths[0].values.mean / 100).toFixed(0) : "120";
-      const organicCarbon = properties.soc ? (properties.soc.depths[0].values.mean / 10).toFixed(1) : "2.5";
-      const clayContent = properties.clay ? properties.clay.depths[0].values.mean : 25;
-      
-      // Determine soil type based on clay content
-      let soilType = "loamy";
-      if (clayContent > 40) soilType = "clay";
-      else if (clayContent < 10) soilType = "sandy";
-      else if (clayContent < 20) soilType = "silt";
-      
-      // Extract weather data
-      const temperature = weatherData.main.temp.toFixed(0);
-      const humidity = weatherData.main.humidity.toString();
-      
-      // Estimate rainfall (using a simplified approach - in real scenario, you'd use historical data)
-      const rainfall = "1200"; // Default value - would need historical weather API for accurate data
-      
-      // Update form data with fetched values
+
+      // Extract and process soil data safely
+      const properties = soilData?.properties ?? {};
+      const phRaw = properties.phh2o?.depths?.[0]?.values?.mean;
+      const nitrogenRaw = properties.nitrogen?.depths?.[0]?.values?.mean;
+      const socRaw = properties.soc?.depths?.[0]?.values?.mean;
+      const clayContent = properties.clay?.depths?.[0]?.values?.mean;
+
+      const pH = phRaw != null ? (phRaw / 10).toFixed(1) : '6.5';
+      const nitrogen = nitrogenRaw != null ? (nitrogenRaw / 100).toFixed(0) : '120';
+      const organicCarbon = socRaw != null ? (socRaw / 10).toFixed(1) : '2.5';
+      const clayVal = typeof clayContent === 'number' ? clayContent : 25;
+
+      let soilType = 'loamy';
+      if (clayVal > 40) soilType = 'clay';
+      else if (clayVal < 10) soilType = 'sandy';
+      else if (clayVal < 20) soilType = 'silt';
+
       setFormData({
-        location: locationQuery,
+        location: resolvedLabel,
         soilType,
         pH,
         nitrogen,
-        phosphorus: "80", // Default estimation based on soil type
-        potassium: "200", // Default estimation based on soil type
-        rainfall,
-        temperature,
-        humidity,
+        phosphorus: '80',
+        potassium: '200',
+        rainfall: rainfallMm,
+        temperature: temperatureC,
+        humidity: humidityPct,
       });
-      
-      toast.success("Location data fetched successfully! Review the details below.");
-      
+
+      toast.success('Location data fetched successfully!');
     } catch (error) {
       console.error('Error fetching location data:', error);
-      toast.error("Failed to fetch location data. Please check your location and try again.");
+      toast.error('Failed to fetch location data. Please check your location and try again.');
     } finally {
       setIsDataLoading(false);
     }
