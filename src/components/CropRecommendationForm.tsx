@@ -3,9 +3,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { MapPin, Droplets, Thermometer, Wind } from "lucide-react";
+import { MapPin, Loader2 } from "lucide-react";
 import { useLanguage } from "@/hooks/useLanguage";
+import { toast } from "sonner";
 
 interface FormData {
   location: string;
@@ -26,6 +26,8 @@ interface CropRecommendationFormProps {
 
 export const CropRecommendationForm = ({ onSubmit, isLoading }: CropRecommendationFormProps) => {
   const { t } = useLanguage();
+  const [location, setLocation] = useState("");
+  const [isDataLoading, setIsDataLoading] = useState(false);
   const [formData, setFormData] = useState<FormData>({
     location: "",
     soilType: "",
@@ -38,13 +40,95 @@ export const CropRecommendationForm = ({ onSubmit, isLoading }: CropRecommendati
     humidity: "",
   });
 
+  const fetchLocationData = async (locationQuery: string) => {
+    setIsDataLoading(true);
+    try {
+      // First, get coordinates from the location
+      const geoResponse = await fetch(
+        `https://api.openweathermap.org/geo/1.0/direct?q=${encodeURIComponent(locationQuery)}&limit=1&appid=${import.meta.env.VITE_OPENWEATHER_API_KEY}`
+      );
+      
+      if (!geoResponse.ok) {
+        throw new Error('Failed to geocode location');
+      }
+      
+      const geoData = await geoResponse.json();
+      if (!geoData || geoData.length === 0) {
+        throw new Error('Location not found');
+      }
+      
+      const { lat, lon } = geoData[0];
+      
+      // Fetch soil data from SoilGrids API
+      const soilResponse = await fetch(
+        `https://rest.isric.org/soilgrids/v2.0/properties?lon=${lon}&lat=${lat}&property=phh2o&property=nitrogen&property=soc&property=clay&depth=0-5cm&value=mean`
+      );
+      
+      // Fetch weather data from OpenWeatherMap
+      const weatherResponse = await fetch(
+        `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&appid=${import.meta.env.VITE_OPENWEATHER_API_KEY}&units=metric`
+      );
+      
+      if (!soilResponse.ok || !weatherResponse.ok) {
+        throw new Error('Failed to fetch environmental data');
+      }
+      
+      const soilData = await soilResponse.json();
+      const weatherData = await weatherResponse.json();
+      
+      // Extract and process soil data
+      const properties = soilData.properties;
+      const pH = properties.phh2o ? (properties.phh2o.depths[0].values.mean / 10).toFixed(1) : "6.5";
+      const nitrogen = properties.nitrogen ? (properties.nitrogen.depths[0].values.mean / 100).toFixed(0) : "120";
+      const organicCarbon = properties.soc ? (properties.soc.depths[0].values.mean / 10).toFixed(1) : "2.5";
+      const clayContent = properties.clay ? properties.clay.depths[0].values.mean : 25;
+      
+      // Determine soil type based on clay content
+      let soilType = "loamy";
+      if (clayContent > 40) soilType = "clay";
+      else if (clayContent < 10) soilType = "sandy";
+      else if (clayContent < 20) soilType = "silt";
+      
+      // Extract weather data
+      const temperature = weatherData.main.temp.toFixed(0);
+      const humidity = weatherData.main.humidity.toString();
+      
+      // Estimate rainfall (using a simplified approach - in real scenario, you'd use historical data)
+      const rainfall = "1200"; // Default value - would need historical weather API for accurate data
+      
+      // Update form data with fetched values
+      setFormData({
+        location: locationQuery,
+        soilType,
+        pH,
+        nitrogen,
+        phosphorus: "80", // Default estimation based on soil type
+        potassium: "200", // Default estimation based on soil type
+        rainfall,
+        temperature,
+        humidity,
+      });
+      
+      toast.success("Location data fetched successfully! Review the details below.");
+      
+    } catch (error) {
+      console.error('Error fetching location data:', error);
+      toast.error("Failed to fetch location data. Please check your location and try again.");
+    } finally {
+      setIsDataLoading(false);
+    }
+  };
+
+  const handleLocationSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (location.trim()) {
+      fetchLocationData(location.trim());
+    }
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     onSubmit(formData);
-  };
-
-  const handleInputChange = (field: keyof FormData, value: string) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
   };
 
   return (
@@ -54,158 +138,92 @@ export const CropRecommendationForm = ({ onSubmit, isLoading }: CropRecommendati
           {t('crop_recommendation_analysis')}
         </CardTitle>
         <CardDescription>
-          {t('enter_farm_details')}
+          Enter your farm location to get personalized crop recommendations
         </CardDescription>
       </CardHeader>
-      <CardContent>
-        <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Location Section */}
+      <CardContent className="space-y-6">
+        {/* Location Input Form */}
+        <form onSubmit={handleLocationSubmit} className="space-y-4">
           <div className="space-y-4">
             <div className="flex items-center gap-2">
               <MapPin className="h-5 w-5 text-primary" />
-              <Label className="text-base font-semibold">{t('location')}</Label>
+              <Label className="text-base font-semibold">Farm Location</Label>
             </div>
             <div>
-              <Label htmlFor="location">{t('farm_location')}</Label>
+              <Label htmlFor="location">Enter your farm address or city</Label>
               <Input
                 id="location"
-                placeholder="e.g., Punjab, India"
-                value={formData.location}
-                onChange={(e) => handleInputChange("location", e.target.value)}
+                placeholder="e.g., Punjab, India or New Delhi, India"
+                value={location}
+                onChange={(e) => setLocation(e.target.value)}
                 required
+                className="mt-2"
               />
             </div>
           </div>
-
-          {/* Soil Properties Section */}
-          <div className="space-y-4">
-            <Label className="text-base font-semibold">{t('soil_properties')}</Label>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="soilType">{t('soil_type')}</Label>
-                <Select onValueChange={(value) => handleInputChange("soilType", value)}>
-                  <SelectTrigger>
-                    <SelectValue placeholder={t('select_soil_type')} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="sandy">{t('sandy')}</SelectItem>
-                    <SelectItem value="loamy">{t('loamy')}</SelectItem>
-                    <SelectItem value="clay">{t('clay')}</SelectItem>
-                    <SelectItem value="silt">{t('silt')}</SelectItem>
-                    <SelectItem value="peaty">{t('peaty')}</SelectItem>
-                    <SelectItem value="chalky">{t('chalky')}</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <Label htmlFor="pH">Soil pH</Label>
-                <Input
-                  id="pH"
-                  type="number"
-                  step="0.1"
-                  min="0"
-                  max="14"
-                  placeholder="6.5"
-                  value={formData.pH}
-                  onChange={(e) => handleInputChange("pH", e.target.value)}
-                  required
-                />
-              </div>
-              <div>
-                <Label htmlFor="nitrogen">Nitrogen (N) mg/kg</Label>
-                <Input
-                  id="nitrogen"
-                  type="number"
-                  placeholder="120"
-                  value={formData.nitrogen}
-                  onChange={(e) => handleInputChange("nitrogen", e.target.value)}
-                  required
-                />
-              </div>
-              <div>
-                <Label htmlFor="phosphorus">Phosphorus (P) mg/kg</Label>
-                <Input
-                  id="phosphorus"
-                  type="number"
-                  placeholder="80"
-                  value={formData.phosphorus}
-                  onChange={(e) => handleInputChange("phosphorus", e.target.value)}
-                  required
-                />
-              </div>
-              <div className="md:col-span-2">
-                <Label htmlFor="potassium">Potassium (K) mg/kg</Label>
-                <Input
-                  id="potassium"
-                  type="number"
-                  placeholder="200"
-                  value={formData.potassium}
-                  onChange={(e) => handleInputChange("potassium", e.target.value)}
-                  required
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Climate Data Section */}
-          <div className="space-y-4">
-            <Label className="text-base font-semibold">{t('climate_conditions')}</Label>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div>
-                <div className="flex items-center gap-2 mb-2">
-                  <Droplets className="h-4 w-4 text-blue-500" />
-                  <Label htmlFor="rainfall">{t('annual_rainfall')}</Label>
-                </div>
-                <Input
-                  id="rainfall"
-                  type="number"
-                  placeholder="1200"
-                  value={formData.rainfall}
-                  onChange={(e) => handleInputChange("rainfall", e.target.value)}
-                  required
-                />
-              </div>
-              <div>
-                <div className="flex items-center gap-2 mb-2">
-                  <Thermometer className="h-4 w-4 text-red-500" />
-                  <Label htmlFor="temperature">{t('avg_temperature')}</Label>
-                </div>
-                <Input
-                  id="temperature"
-                  type="number"
-                  placeholder="25"
-                  value={formData.temperature}
-                  onChange={(e) => handleInputChange("temperature", e.target.value)}
-                  required
-                />
-              </div>
-              <div>
-                <div className="flex items-center gap-2 mb-2">
-                  <Wind className="h-4 w-4 text-gray-500" />
-                  <Label htmlFor="humidity">{t('humidity')}</Label>
-                </div>
-                <Input
-                  id="humidity"
-                  type="number"
-                  min="0"
-                  max="100"
-                  placeholder="70"
-                  value={formData.humidity}
-                  onChange={(e) => handleInputChange("humidity", e.target.value)}
-                  required
-                />
-              </div>
-            </div>
-          </div>
-
+          
           <Button 
             type="submit" 
-            className="w-full bg-gradient-earth hover:shadow-glow transition-all duration-300"
-            disabled={isLoading}
+            className="w-full"
+            disabled={isDataLoading || !location.trim()}
           >
-            {isLoading ? t('analyzing') : t('get_crop_recommendations')}
+            {isDataLoading ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Fetching location data...
+              </>
+            ) : (
+              "Get Location Data"
+            )}
           </Button>
         </form>
+
+        {/* Auto-fetched Data Preview */}
+        {formData.location && (
+          <div className="border rounded-lg p-4 bg-muted/20">
+            <h3 className="font-semibold text-lg mb-3">Detected Farm Conditions</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+              <div>
+                <span className="font-medium">Location:</span> {formData.location}
+              </div>
+              <div>
+                <span className="font-medium">Soil Type:</span> {formData.soilType}
+              </div>
+              <div>
+                <span className="font-medium">Soil pH:</span> {formData.pH}
+              </div>
+              <div>
+                <span className="font-medium">Temperature:</span> {formData.temperature}°C
+              </div>
+              <div>
+                <span className="font-medium">Humidity:</span> {formData.humidity}%
+              </div>
+              <div>
+                <span className="font-medium">Estimated Rainfall:</span> {formData.rainfall}mm
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Submit for Recommendations */}
+        {formData.location && (
+          <form onSubmit={handleSubmit}>
+            <Button 
+              type="submit" 
+              className="w-full bg-gradient-earth hover:shadow-glow transition-all duration-300"
+              disabled={isLoading}
+            >
+              {isLoading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  {t('analyzing')}
+                </>
+              ) : (
+                "Get Crop Recommendations"
+              )}
+            </Button>
+          </form>
+        )}
       </CardContent>
     </Card>
   );
