@@ -39,81 +39,145 @@ export const LocationDetectionForm = ({ onSubmit, isLoading }: LocationDetection
     setStep("detecting");
     setError("");
 
-    if (!navigator.geolocation) {
-      setError(t('geolocation_not_supported'));
-      setStep("initial");
-      return;
-    }
-
-    navigator.geolocation.getCurrentPosition(
-      async (position) => {
-        const { latitude, longitude } = position.coords;
-        setStep("fetching");
-
-        try {
-          // Fetch location name
-          const locationName = await fetchLocationName(latitude, longitude);
-          
-          // Fetch soil data from SoilGrids API
-          const soilData = await fetchSoilData(latitude, longitude);
-          
-          // Fetch climate data from OpenWeatherMap API
-          const climateData = await fetchClimateData(latitude, longitude);
-
-          const data: LocationData = {
-            latitude,
-            longitude,
-            location: locationName,
-            soilData,
-            climateData
-          };
-
-          setLocationData(data);
-          setStep("display");
-        } catch (error) {
-          console.error("Error fetching data:", error);
-          setError(t('error_fetching_data'));
-          setStep("initial");
+  // Helper to promisify geolocation
+    const getPosition = (options: PositionOptions) =>
+      new Promise<GeolocationPosition>((resolve, reject) => {
+        if (!navigator.geolocation) {
+          reject(new Error("GEO_NOT_SUPPORTED"));
+          return;
         }
-      },
-      (error) => {
-        console.error("Geolocation error:", error);
-        switch (error.code) {
-          case error.PERMISSION_DENIED:
-            setError(t('location_permission_denied'));
-            break;
-          case error.POSITION_UNAVAILABLE:
-            setError(t('location_unavailable'));
-            break;
-          case error.TIMEOUT:
-            setError(t('location_timeout'));
-            break;
-          default:
-            setError(t('location_unknown_error'));
-            break;
+        navigator.geolocation.getCurrentPosition(resolve, reject, options);
+      });
+
+    // Fallback via IP when GPS is unavailable (approximate)
+    const getIpLocation = async (): Promise<{ latitude: number; longitude: number }> => {
+      try {
+        // Primary: ipapi.co (no key, CORS-enabled)
+        const r1 = await fetch("https://ipapi.co/json/");
+        if (r1.ok) {
+          const j = await r1.json();
+          if (j && typeof j.latitude === "number" && typeof j.longitude === "number") {
+            return { latitude: j.latitude, longitude: j.longitude };
+          }
         }
-        setStep("initial");
-      },
-      {
-        enableHighAccuracy: true,
-        timeout: 10000,
-        maximumAge: 300000
+      } catch {}
+      try {
+        // Secondary: ipwho.is (no key)
+        const r2 = await fetch("https://ipwho.is/");
+        if (r2.ok) {
+          const j2 = await r2.json();
+          if (j2?.success && typeof j2.latitude === "number" && typeof j2.longitude === "number") {
+            return { latitude: j2.latitude, longitude: j2.longitude };
+          }
+        }
+      } catch {}
+      throw new Error("IP_FALLBACK_FAILED");
+    };
+
+    try {
+      // Check permission up front to avoid misleading IP fallback when explicitly denied
+      const permState = await (navigator.permissions?.query as any)?.({ name: 'geolocation' as any }).catch(() => null);
+
+      if (permState && permState.state === 'denied') {
+        // User explicitly denied: show clear error and stop.
+        setError(t('location_permission_denied'));
+        setStep('initial');
+        return;
       }
-    );
+
+      // Try high-accuracy first, refine with watchPosition briefly, then low-accuracy, then IP fallback
+      let coords: { latitude: number; longitude: number } | null = null;
+      try {
+        const pos = await getPosition({ enableHighAccuracy: true, timeout: 9000, maximumAge: 0 });
+        coords = { latitude: pos.coords.latitude, longitude: pos.coords.longitude };
+
+        // Quick refinement using watchPosition up to 8s or until accuracy < 100m
+        if (navigator.geolocation && typeof navigator.geolocation.watchPosition === 'function') {
+          await new Promise<void>((resolve) => {
+            const started = Date.now();
+            const watchId = navigator.geolocation.watchPosition(
+              (p) => {
+                const acc = p.coords.accuracy ?? 99999;
+                // Replace coords if better
+                if (!coords || acc < 100) {
+                  coords = { latitude: p.coords.latitude, longitude: p.coords.longitude };
+                }
+                if (acc < 100 || Date.now() - started > 8000) {
+                  navigator.geolocation.clearWatch(watchId);
+                  resolve();
+                }
+              },
+              () => {
+                try { navigator.geolocation.clearWatch(watchId); } catch {}
+                resolve();
+              },
+              { enableHighAccuracy: true, maximumAge: 0 }
+            );
+          });
+        }
+      } catch (e1) {
+        try {
+          const pos2 = await getPosition({ enableHighAccuracy: false, timeout: 12000, maximumAge: 600000 });
+          coords = { latitude: pos2.coords.latitude, longitude: pos2.coords.longitude };
+        } catch (e2) {
+          // If permission is not denied but device couldn't deliver a fix, fall back to approximate IP location
+          // Only do this when permission is prompt/granted but position unavailable or timed out
+          if (!permState || permState.state !== 'denied') {
+            coords = await getIpLocation();
+          }
+        }
+      }
+
+      if (!coords) {
+        throw new Error("NO_COORDS");
+      }
+
+      const { latitude, longitude } = coords;
+      setStep("fetching");
+
+      // Fetch downstream data in sequence to keep logic simple
+      const locationName = await fetchLocationName(latitude, longitude);
+      const soilData = await fetchSoilData(latitude, longitude);
+      const climateData = await fetchClimateData(latitude, longitude);
+
+      const data: LocationData = {
+        latitude,
+        longitude,
+        location: locationName,
+        soilData,
+        climateData
+      };
+
+      setLocationData(data);
+      setStep("display");
+    } catch (err: any) {
+      console.error("Location detection failed:", err);
+      if (err?.message === "GEO_NOT_SUPPORTED") {
+        setError(t('geolocation_not_supported'));
+  } else if (err?.message === "IP_FALLBACK_FAILED" || err?.message === "NO_COORDS") {
+        setError(t('location_unavailable'));
+      } else {
+        setError(t('location_unknown_error'));
+      }
+      setStep("initial");
+    }
   };
 
   const fetchLocationName = async (lat: number, lon: number): Promise<string> => {
     try {
-      const response = await fetch(
-        `https://api.openweathermap.org/geo/1.0/reverse?lat=${lat}&lon=${lon}&limit=1&appid=demo_key`
-      );
+      // Use OpenStreetMap Nominatim reverse geocoding (no API key)
+      const url = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lon}`;
+      const response = await fetch(url, { headers: { "Accept": "application/json" } });
       const data = await response.json();
-      
-      if (data && data.length > 0) {
-        const place = data[0];
-        return `${place.name}, ${place.state}, ${place.country}`;
+
+      const addr = data?.address || {};
+      const locality = addr.city || addr.town || addr.village || addr.hamlet || data?.name;
+      const state = addr.state || addr.county;
+      const country = addr.country;
+      if (locality || state || country) {
+        return [locality, state, country].filter(Boolean).join(', ');
       }
-      return `${lat.toFixed(4)}, ${lon.toFixed(4)}`;
+      return data?.display_name || `${lat.toFixed(4)}, ${lon.toFixed(4)}`;
     } catch (error) {
       return `${lat.toFixed(4)}, ${lon.toFixed(4)}`;
     }
@@ -174,23 +238,21 @@ export const LocationDetectionForm = ({ onSubmit, isLoading }: LocationDetection
 
   const fetchClimateData = async (lat: number, lon: number) => {
     try {
-      // Current weather data
-      const currentResponse = await fetch(
-        `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&appid=demo_key&units=metric`
-      );
-      const currentData = await currentResponse.json();
+      // Use Open-Meteo (no key) for current weather
+      const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,relative_humidity_2m`;
+      const r = await fetch(url);
+      const j = await r.json();
 
-      // Historical climate data (using current as approximation for MVP)
-      const temperature = currentData.main?.temp || 25;
-      const humidity = currentData.main?.humidity || 70;
-      
+      const temperature = j?.current?.temperature_2m ?? 25;
+      const humidity = j?.current?.relative_humidity_2m ?? 70;
+
       // Estimate annual rainfall based on location (simplified for MVP)
       const rainfall = estimateAnnualRainfall(lat, lon);
 
       return {
         temperature: Math.round(temperature),
         rainfall,
-        humidity
+        humidity: Math.round(humidity)
       };
     } catch (error) {
       console.error("Error fetching climate data:", error);

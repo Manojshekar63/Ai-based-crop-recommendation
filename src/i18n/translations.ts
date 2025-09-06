@@ -548,3 +548,122 @@ export const translations = {
     kn: "ತಾಪಮಾನ"
   }
 };
+
+// Chatbot strings (added at module end so existing imports continue to work)
+export const chatbotTranslations = {
+  chat_title: {
+    en: 'Assistant',
+    hi: 'सहायक',
+    kn: 'ಸಹಾಯಕ'
+  },
+  chat_subtitle: {
+    en: 'Ask in English, Hindi, or Kannada',
+    hi: 'अंग्रेज़ी, हिंदी या कन्नड़ में पूछें',
+    kn: 'ಇಂಗ್ಲಿಷ್, ಹಿಂದಿ ಅಥವಾ ಕನ್ನಡದಲ್ಲಿ ಕೇಳಿ'
+  },
+  welcome: {
+    en: 'Hello! How can I assist you today?',
+    hi: 'नमस्ते! मैं आपकी किस प्रकार सहायता कर सकता हूँ?',
+    kn: 'ನಮಸ್ಕಾರ! ನಾನು ನಿಮಗೆ ಹೇಗೆ ಸಹಾಯ ಮಾಡಬಹುದು?'
+  },
+  ask_question: {
+    en: 'Please type or say your question.',
+    hi: 'कृपया अपना सवाल टाइप करें या बोलें।',
+    kn: 'ದಯವಿಟ್ಟು ನಿಮ್ಮ ಪ್ರಶ್ನೆಯನ್ನು ಟೈಪ್ ಮಾಡಿ ಅಥವಾ ಹೇಳಿ.'
+  },
+  bye: {
+    en: 'Goodbye!',
+    hi: 'अलविदा!',
+    kn: 'ವಿದಾಯ!'
+  },
+  default_answer: {
+    en: "I can help with crops, soil pH, and fertility. Try asking about 'ideal pH for tomatoes' or 'best crops for monsoon'.",
+    hi: "मैं फसलों, मिट्टी के pH और उर्वरता में मदद कर सकता हूँ। जैसे 'टमाटर के लिए आदर्श pH' या 'मानसून के लिए सर्वोत्तम फसलें' पूछें।",
+    kn: "ನಾನು ಬೆಳೆಗಳು, ಮಣ್ಣಿನ pH ಮತ್ತು ಫಲವತ್ತತೆಯಲ್ಲಿ ಸಹಾಯ ಮಾಡಬಹುದು. 'ಟೊಮೇಟೊಗಳ ಆದರ್ಶ pH' ಅಥವಾ 'ಮಳೆಗಾಲಕ್ಕೆ ಉತ್ತಮ ಬೆಳೆಗಳು' ಬಗ್ಗೆ ಕೇಳಿ."
+  },
+  chat_suggestion_1: {
+    en: 'Best crops for monsoon?',
+    hi: 'मानसून में सर्वोत्तम फसलें?',
+    kn: 'ಮಳೆಗಾಲಕ್ಕೆ ಉತ್ತಮ ಬೆಳೆಗಳು?'
+  },
+  chat_suggestion_2: {
+    en: 'Ideal soil pH for tomatoes?',
+    hi: 'टमाटर के लिए आदर्श मिट्टी pH?',
+    kn: 'ಟೊಮೇಟೊಗೆ ಆದರ್ಶ ಮಣ್ಣಿನ pH?'
+  },
+  crops_monsoon: {
+    en: 'Monsoon-friendly crops include rice, maize, millets, pulses (tur/urad), and groundnut depending on your region and soil drainage.',
+    hi: 'मानसून में चावल, मक्का, बाजरा, दालें (तूर/उड़द) और मूंगफली जैसी फसलें उपयुक्त रहती हैं—क्षेत्र और मिट्टी के जलनिकास पर निर्भर.',
+    kn: 'ಮಾನ್ಸೂನ್ ಕಾಲಕ್ಕೆ ಅಕ್ಕಿ, ಜೋಳ, ಸಜ್ಜೆ, ಪಲ್ಸೆಗಳು (ತೂರ್/ಉದ್ದಿನ) ಮತ್ತು ಕಡಲೆ ಉತ್ತಮ—ನಿಮ್ಮ ಪ್ರದೇಶ ಮತ್ತು ಮಣ್ಣಿನ ನೀರಿನ ಹರಿವಿನ ಮೇಲೆ ಅವಲಂಬಿತ.'
+  },
+  ideal_ph_tomatoes: {
+    en: 'Ideal soil pH for tomatoes is 6.0–6.8. Add lime if too acidic (<6) or sulfur if too alkaline (>7.5).',
+    hi: 'टमाटर के लिए आदर्श pH 6.0–6.8 होता है। pH < 6 हो तो चूना, > 7.5 हो तो सल्फर मिलाएँ.',
+    kn: 'ಟೊಮೇಟೊಗಳಿಗೆ ಆದರ್ಶ ಮಣ್ಣಿನ pH 6.0–6.8. pH < 6 ಇದ್ದರೆ ಚುನ್ನ, > 7.5 ಇದ್ದರೆ ಗಂಧಕ ಬಳಸಿ.'
+  },
+  improve_fertility: {
+    en: 'Improve soil fertility with organic compost, green manures, crop rotation, and balanced NPK as per a soil test.',
+    hi: 'जैविक कंपोस्ट, ग्रीन मैन्योर, फसल चक्र और मिट्टी परीक्षण के अनुसार संतुलित NPK से उर्वरता बढ़ाएँ.',
+    kn: 'ಜೈವಿಕ ಕಂಪೋಸ್ಟ್, ಹಸಿರು ಮಾನ್ಯುರ್, ಬೆಳೆ ಪರಿವರ್ತನೆ ಮತ್ತು ಮಣ್ಣಿನ ಪರೀಕ್ಷೆಯ ಪ್ರಕಾರ ಸಮತೋಲನ NPK ಬಳಸಿ ಫಲವತ್ತತೆಯನ್ನು ಹೆಚ್ಚಿಸಿ.'
+  },
+  chat_suggestion_3: {
+    en: 'How to improve soil fertility?',
+    hi: 'मिट्टी की उर्वरता कैसे बढ़ाएँ?',
+    kn: 'ಮಣ್ಣಿನ ಫಲವತ್ತತೆಯನ್ನು ಹೇಗೆ ಹೆಚ್ಚಿಸಬೇಕು?'
+  },
+  listening: {
+    en: 'Listening…',
+    hi: 'सुन रहा है…',
+    kn: 'ಕೆಳೆಯುತ್ತಿದೆ…'
+  },
+  ready: {
+    en: 'Ready',
+    hi: 'तैयार',
+    kn: 'ಸಿದ್ಧ'
+  },
+  speak: {
+    en: 'Speak',
+    hi: 'बोलें',
+    kn: 'ಮಾತನಾಡಿ'
+  },
+  stop: {
+    en: 'Stop',
+    hi: 'रोकें',
+    kn: 'ನಿಲ್ಲಿಸಿ'
+  },
+  type_message: {
+    en: 'Type a message…',
+    hi: 'संदेश टाइप करें…',
+    kn: 'ಸಂದೇಶವನ್ನು ಬರೆಯಿರಿ…'
+  },
+  send: {
+    en: 'Send',
+    hi: 'भेजें',
+    kn: 'ಕಳುಹಿಸಿ'
+  },
+  clear_chat: {
+    en: 'Clear chat',
+    hi: 'चैट साफ़ करें',
+    kn: 'ಚಾಟ್ ತೆರವುಗೊಳಿಸಿ'
+  },
+  voice_on: {
+    en: 'Voice on',
+    hi: 'आवाज़ चालू',
+    kn: 'ವಾಯ್ಸ್ ಆನ್'
+  },
+  voice_off: {
+    en: 'Voice off',
+    hi: 'आवाज़ बंद',
+    kn: 'ವಾಯ್ಸ್ ಆಫ್'
+  },
+  speech_not_supported: {
+    en: 'Speech recognition not supported in this browser.',
+    hi: 'इस ब्राउज़र में वॉइस रिकग्निशन समर्थित नहीं है।',
+    kn: 'ಈ ಬ್ರೌಸರ್‌ನಲ್ಲಿ ವಾಯ್ಸ್ ಗುರುತಿಸುವಿಕೆ ಬೆಂಬಲಿತವಲ್ಲ.'
+  },
+  mic_permission_denied: {
+    en: 'Microphone permission denied. Please allow mic access.',
+    hi: 'माइक्रोफ़ोन की अनुमति अस्वीकृत। कृपया माइक की अनुमति दें।',
+    kn: 'ಮೈಕ್ರೋಫೋನ್ ಅನುಮತಿ ನಿರಾಕರಿಸಲಾಗಿದೆ. ದಯವಿಟ್ಟು ಮೈಕ್ ಪ್ರವೇಶಕ್ಕೆ ಅನುಮತಿ ನೀಡಿ.'
+  }
+};
