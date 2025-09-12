@@ -5,7 +5,6 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { MapPin, Loader2 } from "lucide-react";
 import { useLanguage } from "@/hooks/useLanguage";
-import { toast } from "sonner";
 
 interface FormData {
   location: string;
@@ -14,6 +13,7 @@ interface FormData {
   nitrogen: string;
   phosphorus: string;
   potassium: string;
+  organicCarbon?: string;
   rainfall: string;
   temperature: string;
   humidity: string;
@@ -26,8 +26,6 @@ interface CropRecommendationFormProps {
 
 export const CropRecommendationForm = ({ onSubmit, isLoading }: CropRecommendationFormProps) => {
   const { t } = useLanguage();
-  const [location, setLocation] = useState("");
-  const [isDataLoading, setIsDataLoading] = useState(false);
   const [formData, setFormData] = useState<FormData>({
     location: "",
     soilType: "",
@@ -35,132 +33,141 @@ export const CropRecommendationForm = ({ onSubmit, isLoading }: CropRecommendati
     nitrogen: "",
     phosphorus: "",
     potassium: "",
+  organicCarbon: "",
     rainfall: "",
     temperature: "",
     humidity: "",
   });
-
-  const fetchLocationData = async (locationQuery: string) => {
-    setIsDataLoading(true);
-    try {
-      // Determine OpenWeather API key from localStorage or env
-      const keyFromStorage = (() => {
-        try {
-          return window.localStorage.getItem('openweather_api_key') || undefined;
-        } catch {
-          return undefined;
-        }
-      })();
-      // Note: env vars may be undefined in this environment
-      const keyFromEnv = (import.meta as any)?.env?.VITE_OPENWEATHER_API_KEY as string | undefined;
-      const OPENWEATHER_API_KEY = keyFromStorage || keyFromEnv;
-
-      // 1) Geocode: Use OpenWeather geocoding if API key exists, otherwise fallback to Nominatim (no key)
-      let lat: number, lon: number, resolvedLabel = locationQuery;
-      if (OPENWEATHER_API_KEY) {
-        const geoResponse = await fetch(
-          `https://api.openweathermap.org/geo/1.0/direct?q=${encodeURIComponent(locationQuery)}&limit=1&appid=${OPENWEATHER_API_KEY}`
-        );
-        if (!geoResponse.ok) throw new Error('Failed to geocode location (OpenWeather)');
-        const geoData = await geoResponse.json();
-        if (!geoData || geoData.length === 0) throw new Error('Location not found');
-        lat = geoData[0].lat;
-        lon = geoData[0].lon;
-        resolvedLabel = [geoData[0].name, geoData[0].state, geoData[0].country].filter(Boolean).join(', ');
-      } else {
-        const nominatim = await fetch(
-          `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(locationQuery)}&limit=1&addressdetails=1`,
-          { headers: { 'Accept-Language': 'en', 'User-Agent': 'Lovable-Crop-App/1.0' } }
-        );
-        if (!nominatim.ok) throw new Error('Failed to geocode location (Nominatim)');
-        const geo = await nominatim.json();
-        if (!geo || geo.length === 0) throw new Error('Location not found');
-        lat = parseFloat(geo[0].lat);
-        lon = parseFloat(geo[0].lon);
-        resolvedLabel = geo[0].display_name || resolvedLabel;
-      }
-
-      // 2) Fetch soil data from SoilGrids API
-      const soilResponse = await fetch(
-        `https://rest.isric.org/soilgrids/v2.0/properties?lon=${lon}&lat=${lat}&property=phh2o&property=nitrogen&property=soc&property=clay&depth=0-5cm&value=mean`
-      );
-
-      // 3) Fetch weather data: Prefer OpenWeather if key exists, else fallback to Open-Meteo (no key)
-      let temperatureC = '25';
-      let humidityPct = '70';
-      let rainfallMm = '0';
-      if (OPENWEATHER_API_KEY) {
-        const weatherResponse = await fetch(
-          `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&appid=${OPENWEATHER_API_KEY}&units=metric`
-        );
-        if (!weatherResponse.ok) throw new Error('Failed to fetch weather data (OpenWeather)');
-        const weatherData = await weatherResponse.json();
-        temperatureC = String(Math.round(weatherData.main?.temp ?? 25));
-        humidityPct = String(Math.round(weatherData.main?.humidity ?? 70));
-        // OpenWeather current rain (last 1h) if available
-        rainfallMm = String(weatherData.rain?.['1h'] ?? 0);
-      } else {
-        const openMeteo = await fetch(
-          `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,relative_humidity_2m,precipitation&timezone=auto`
-        );
-        if (!openMeteo.ok) throw new Error('Failed to fetch weather data (Open-Meteo)');
-        const meteo = await openMeteo.json();
-        temperatureC = String(Math.round(meteo.current?.temperature_2m ?? 25));
-        humidityPct = String(Math.round(meteo.current?.relative_humidity_2m ?? 70));
-        rainfallMm = String(meteo.current?.precipitation ?? 0);
-      }
-
-      if (!soilResponse.ok) throw new Error('Failed to fetch soil data');
-      const soilData = await soilResponse.json();
-
-      // Extract and process soil data safely
-      const properties = soilData?.properties ?? {};
-      const phRaw = properties.phh2o?.depths?.[0]?.values?.mean;
-      const nitrogenRaw = properties.nitrogen?.depths?.[0]?.values?.mean;
-      const socRaw = properties.soc?.depths?.[0]?.values?.mean;
-      const clayContent = properties.clay?.depths?.[0]?.values?.mean;
-
-      const pH = phRaw != null ? (phRaw / 10).toFixed(1) : '6.5';
-      const nitrogen = nitrogenRaw != null ? (nitrogenRaw / 100).toFixed(0) : '120';
-      const organicCarbon = socRaw != null ? (socRaw / 10).toFixed(1) : '2.5';
-      const clayVal = typeof clayContent === 'number' ? clayContent : 25;
-
-      let soilType = 'loamy';
-      if (clayVal > 40) soilType = 'clay';
-      else if (clayVal < 10) soilType = 'sandy';
-      else if (clayVal < 20) soilType = 'silt';
-
-      setFormData({
-        location: resolvedLabel,
-        soilType,
-        pH,
-        nitrogen,
-        phosphorus: '80',
-        potassium: '200',
-        rainfall: rainfallMm,
-        temperature: temperatureC,
-        humidity: humidityPct,
-      });
-
-      toast.success('Location data fetched successfully!');
-    } catch (error) {
-      console.error('Error fetching location data:', error);
-      toast.error('Failed to fetch location data. Please check your location and try again.');
-    } finally {
-      setIsDataLoading(false);
-    }
-  };
-
-  const handleLocationSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (location.trim()) {
-      fetchLocationData(location.trim());
-    }
-  };
+  const [fetching, setFetching] = useState(false);
+  const [error, setError] = useState<string>("");
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onSubmit(formData);
+    void handleFetchAndSubmit();
+  };
+
+  const handleInputChange = (field: keyof FormData, value: string) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+  };
+
+  const handleFetchAndSubmit = async () => {
+    if (!formData.location.trim()) return;
+    setFetching(true);
+    setError("");
+
+    try {
+      // 1) Geocode address -> lat/lon
+      const geo = await geocodeAddress(formData.location.trim());
+      if (!geo) throw new Error("GEOCODE_FAIL");
+
+      // 2) Fetch soil and climate
+      const soil = await fetchSoilData(geo.lat, geo.lon);
+      const climate = await fetchClimateData(geo.lat, geo.lon);
+
+      // 3) Build final payload (pre-filled, hidden/read-only to user)
+      const finalForm: FormData = {
+        location: geo.displayName,
+        soilType: soil.soilTexture,
+        pH: String(soil.pH),
+        nitrogen: String(soil.nitrogen),
+        phosphorus: String(soil.phosphorus),
+        potassium: String(soil.potassium),
+  organicCarbon: String(soil.organicCarbon),
+        rainfall: String(climate.rainfall),
+        temperature: String(climate.temperature),
+        humidity: String(climate.humidity),
+      };
+      setFormData(finalForm);
+      onSubmit(finalForm);
+    } catch (err) {
+      console.error(err);
+      setError(t('error_fetching_data'));
+    } finally {
+      setFetching(false);
+    }
+  };
+
+  // Geocode using OpenStreetMap Nominatim (no key required)
+  const geocodeAddress = async (q: string): Promise<{ lat: number; lon: number; displayName: string } | null> => {
+    const url = `https://nominatim.openstreetmap.org/search?format=jsonv2&q=${encodeURIComponent(q)}&limit=1`;
+    const res = await fetch(url, { headers: { Accept: 'application/json' } });
+    const j = await res.json();
+    if (Array.isArray(j) && j.length > 0) {
+      return { lat: parseFloat(j[0].lat), lon: parseFloat(j[0].lon), displayName: j[0].display_name };
+    }
+    return null;
+  };
+
+  // SoilGrids fetch – similar to automatic detection
+  const fetchSoilData = async (lat: number, lon: number) => {
+    try {
+      const properties = ['phh2o', 'nitrogen', 'ocd', 'sand', 'silt', 'clay'];
+      const depth = '0-5cm';
+      const promises = properties.map(prop =>
+        fetch(`https://rest.isric.org/soilgrids/v2.0/properties/query?lon=${lon}&lat=${lat}&property=${prop}&depth=${depth}&value=mean`).then(r => r.json())
+      );
+      const results = await Promise.all(promises);
+      const pH = results[0]?.properties?.layers?.[0]?.depths?.[0]?.values?.mean / 10 || 6.5;
+      const nitrogen = results[1]?.properties?.layers?.[0]?.depths?.[0]?.values?.mean / 100 || 120;
+      const organicCarbon = results[2]?.properties?.layers?.[0]?.depths?.[0]?.values?.mean / 10 || 15;
+      const sand = results[3]?.properties?.layers?.[0]?.depths?.[0]?.values?.mean / 10 || 40;
+      const silt = results[4]?.properties?.layers?.[0]?.depths?.[0]?.values?.mean / 10 || 30;
+      const clay = results[5]?.properties?.layers?.[0]?.depths?.[0]?.values?.mean / 10 || 30;
+      let soilTexture = "loamy";
+      if (sand > 50) soilTexture = "sandy";
+      else if (clay > 40) soilTexture = "clay";
+      else if (silt > 40) soilTexture = "silt";
+      const phosphorus = Math.round(organicCarbon * 5);
+      const potassium = Math.round(organicCarbon * 15);
+      return {
+        pH: Math.round(pH * 10) / 10,
+        nitrogen: Math.round(nitrogen),
+        phosphorus: Math.max(40, Math.min(120, phosphorus)),
+        potassium: Math.max(100, Math.min(300, potassium)),
+        organicCarbon: Math.round(organicCarbon * 10) / 10,
+        soilTexture
+      };
+    } catch (e) {
+      console.error('soil error', e);
+      return { pH: 6.5, nitrogen: 120, phosphorus: 80, potassium: 200, organicCarbon: 15, soilTexture: 'loamy' };
+    }
+  };
+
+  const fetchClimateData = async (lat: number, lon: number) => {
+    const apiKey = (import.meta as any).env?.VITE_OPENWEATHER_API_KEY as string | undefined;
+    try {
+      if (apiKey) {
+        const r = await fetch(`https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&appid=${apiKey}&units=metric`);
+        const j = await r.json();
+        const temperature = j?.main?.temp ?? 25;
+        const humidity = j?.main?.humidity ?? 70;
+        // If current rain data exists use last 1h (mm), else estimate annual
+        const rain1h = j?.rain?.['1h'];
+        const rainfall = typeof rain1h === 'number' ? Math.round(rain1h) : estimateAnnualRainfall(lat, lon);
+        return { temperature: Math.round(temperature), humidity: Math.round(humidity), rainfall };
+      }
+    } catch (e) {
+      console.error('openweather error', e);
+    }
+    // Fallback: Open-Meteo (no key)
+    try {
+      const r = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,relative_humidity_2m`);
+      const j = await r.json();
+      const temperature = j?.current?.temperature_2m ?? 25;
+      const humidity = j?.current?.relative_humidity_2m ?? 70;
+      const rainfall = estimateAnnualRainfall(lat, lon);
+      return { temperature: Math.round(temperature), humidity: Math.round(humidity), rainfall };
+    } catch (e) {
+      console.error('open-meteo error', e);
+      return { temperature: 25, humidity: 70, rainfall: 1000 };
+    }
+  };
+
+  const estimateAnnualRainfall = (lat: number, _lon: number): number => {
+    const absLat = Math.abs(lat);
+    if (absLat < 23.5) return Math.round(1200 + Math.random() * 800);
+    if (absLat < 35) return Math.round(600 + Math.random() * 600);
+    return Math.round(400 + Math.random() * 800);
   };
 
   return (
@@ -170,92 +177,40 @@ export const CropRecommendationForm = ({ onSubmit, isLoading }: CropRecommendati
           {t('crop_recommendation_analysis')}
         </CardTitle>
         <CardDescription>
-          Enter your farm location to get personalized crop recommendations
+          {t('enter_farm_details')}
         </CardDescription>
       </CardHeader>
-      <CardContent className="space-y-6">
-        {/* Location Input Form */}
-        <form onSubmit={handleLocationSubmit} className="space-y-4">
+      <CardContent>
+        <form onSubmit={handleSubmit} className="space-y-6">
+          {/* Location only */}
           <div className="space-y-4">
             <div className="flex items-center gap-2">
               <MapPin className="h-5 w-5 text-primary" />
-              <Label className="text-base font-semibold">Farm Location</Label>
+              <Label className="text-base font-semibold">{t('location')}</Label>
             </div>
             <div>
-              <Label htmlFor="location">Enter your farm address or city</Label>
+              <Label htmlFor="location">{t('farm_location')}</Label>
               <Input
                 id="location"
-                placeholder="e.g., Punjab, India or New Delhi, India"
-                value={location}
-                onChange={(e) => setLocation(e.target.value)}
+                placeholder="e.g., Punjab, India"
+                value={formData.location}
+                onChange={(e) => handleInputChange("location", e.target.value)}
                 required
-                className="mt-2"
               />
+              {error && <p className="text-destructive text-sm mt-2">{error}</p>}
             </div>
           </div>
-          
-          <Button 
-            type="submit" 
-            className="w-full"
-            disabled={isDataLoading || !location.trim()}
+
+          <Button
+            type="submit"
+            className="w-full bg-gradient-earth hover:shadow-glow transition-all duration-300"
+            disabled={isLoading || fetching}
           >
-            {isDataLoading ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Fetching location data...
-              </>
-            ) : (
-              "Get Location Data"
-            )}
+            {isLoading || fetching ? (
+              <span className="inline-flex items-center gap-2"><Loader2 className="h-4 w-4 animate-spin" /> {t('analyzing')}</span>
+            ) : t('get_crop_recommendations')}
           </Button>
         </form>
-
-        {/* Auto-fetched Data Preview */}
-        {formData.location && (
-          <div className="border rounded-lg p-4 bg-muted/20">
-            <h3 className="font-semibold text-lg mb-3">Detected Farm Conditions</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-              <div>
-                <span className="font-medium">Location:</span> {formData.location}
-              </div>
-              <div>
-                <span className="font-medium">Soil Type:</span> {formData.soilType}
-              </div>
-              <div>
-                <span className="font-medium">Soil pH:</span> {formData.pH}
-              </div>
-              <div>
-                <span className="font-medium">Temperature:</span> {formData.temperature}°C
-              </div>
-              <div>
-                <span className="font-medium">Humidity:</span> {formData.humidity}%
-              </div>
-              <div>
-                <span className="font-medium">Estimated Rainfall:</span> {formData.rainfall}mm
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Submit for Recommendations */}
-        {formData.location && (
-          <form onSubmit={handleSubmit}>
-            <Button 
-              type="submit" 
-              className="w-full bg-gradient-earth hover:shadow-glow transition-all duration-300"
-              disabled={isLoading}
-            >
-              {isLoading ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  {t('analyzing')}
-                </>
-              ) : (
-                "Get Crop Recommendations"
-              )}
-            </Button>
-          </form>
-        )}
       </CardContent>
     </Card>
   );

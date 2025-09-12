@@ -4,8 +4,10 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
-import { Mic, MicOff, Send, MessageSquareText, Globe, X } from 'lucide-react';
+import { Mic, MicOff, Send, MessageSquareText, Globe, X, Loader2 } from 'lucide-react';
 import { useLanguage } from '@/hooks/useLanguage';
+import { askGemini } from '@/utils/geminiApi';
+import { toast } from '@/hooks/use-toast';
 
 type ChatMsg = { role: 'user' | 'bot'; text: string; ts: number };
 
@@ -21,6 +23,7 @@ export const ChatbotAssistant = () => {
   const [input, setInput] = useState('');
   const [listening, setListening] = useState(false);
   const [voiceEnabled, setVoiceEnabled] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [messages, setMessages] = useState<ChatMsg[]>(() => [
     { role: 'bot', text: t('welcome'), ts: Date.now() },
     { role: 'bot', text: t('ask_question'), ts: Date.now() + 1 },
@@ -132,52 +135,60 @@ export const ChatbotAssistant = () => {
     setListening(false);
   };
 
-  // ----- Chat logic (simple rule-based for now) -----
+  // ----- Chat logic (Gemini + fallback) -----
   const generateReply = (q: string): string => {
     const l = language;
     const lower = q.toLowerCase().trim();
-
-    // Exact match of suggestions -> deterministic replies
     const s1 = t('chat_suggestion_1')?.toLowerCase();
     const s2 = t('chat_suggestion_2')?.toLowerCase();
     const s3 = t('chat_suggestion_3')?.toLowerCase();
     if (s1 && lower === s1) return t('crops_monsoon');
     if (s2 && lower === s2) return t('ideal_ph_tomatoes');
     if (s3 && lower === s3) return t('improve_fertility');
-
-    // Greetings
-    if (/\b(hello|hi)\b|namaste|namaskar|ನಮಸ್ಕಾರ|ನಮಸ್ಕಾರ|ಹಲೋ|नमस्ते/i.test(lower)) return t('welcome');
-    // Goodbye
-    if (/\b(bye|goodbye)\b|alvida|ವಿದಾಯ|বিদায়|अलविदा/i.test(lower)) return t('bye');
-
-    // Tomatoes / pH intent
-    if (/\b(ph|pH)\b|tomato|tomatoes|टमाटर|टमेटो|ಟಮಾಟೋ/i.test(lower)) return t('ideal_ph_tomatoes');
-
-    // Fertility intent
-    if (/fertil|fertility|improv|उर्वर|उपजाऊ|ಫರ್ಟಿಲಿಟಿ|ಫಲವತ್ತ|ಮಣ್ಣಿನ ಫಲವತ್ತತೆ/i.test(lower)) return t('improve_fertility');
-
-    // Weather intent
-    if (/weather|rain|temperature|climate|बारिश|मौसम|तापमान|ಹವಾಮಾನ|ಮಳೆ|ತಾಪಮಾನ/i.test(lower)) {
+    if (/\b(hello|hi)\b|namaste|namaskar|ನಮಸ್ಕಾರ|ಹಲೋ|नमस्ते/i.test(lower)) return t('welcome');
+    if (/\b(bye|goodbye)\b|alvida|ವಿದಾಯ|अलविदा/i.test(lower)) return t('bye');
+    if (/\b(ph|pH)\b|tomato|tomatoes|टमाटर|ಟಮಾಟೋ/i.test(lower)) return t('ideal_ph_tomatoes');
+    if (/fertil|fertility|improv|उर्वर|उपजाऊ|ಫರ್ಟಿಲಿಟಿ/i.test(lower)) return t('improve_fertility');
+    if (/weather|rain|temperature|climate|बारिश|मौसम|ತಾಪಮಾನ|ಹವಾಮಾನ/i.test(lower)) {
       return {
         en: 'Ask me about soil pH, rainfall ranges, or best crops for your season. I can guide you with quick tips.',
         hi: 'मुझसे मिट्टी के pH, वर्षा सीमा या आपके मौसम के लिए सर्वोत्तम फसलों के बारे में पूछें। मैं त्वरित सुझाव दे सकता हूँ।',
         kn: 'ಮಣ್ಣಿನ pH, ಮಳೆಯ ಪ್ರಮಾಣ ಅಥವಾ ನಿಮ್ಮ ಋತುವಿಗೆ ಉತ್ತಮ ಬೆಳೆಗಳ ಬಗ್ಗೆ ಕೇಳಿ. ನಾನು ವೇಗದ ಸಲಹೆಗಳನ್ನು ನೀಡುತ್ತೇನೆ.'
       }[l];
     }
-
-    // Default helpful answer
     return t('default_answer');
   };
 
-  const handleSend = (override?: string) => {
+  const handleSend = async (override?: string) => {
     const text = (override ?? input).trim();
     if (!text) return;
     const user: ChatMsg = { role: 'user', text, ts: Date.now() };
-    const replyText = generateReply(text);
-    const bot: ChatMsg = { role: 'bot', text: replyText, ts: Date.now() + 1 };
-    setMessages((m) => [...m, user, bot]);
+    setMessages((m) => [...m, user]);
     setInput('');
-    speak(replyText);
+
+    try {
+      setLoading(true);
+      const reply = await askGemini(text, language);
+      const bot: ChatMsg = { role: 'bot', text: reply || t('default_answer'), ts: Date.now() + 1 };
+      setMessages((m) => [...m, bot]);
+      speak(bot.text);
+    } catch (err) {
+      // fallback to rule-based reply when API fails
+      const fallback = generateReply(text);
+      const bot: ChatMsg = { role: 'bot', text: fallback, ts: Date.now() + 1 };
+      setMessages((m) => [...m, bot]);
+      speak(bot.text);
+      // notify user we used fallback (localized minimal strings)
+      const loc = {
+        en: { title: 'Fallback reply', desc: 'Gemini is unavailable. Using local answer.' },
+        hi: { title: 'विकल्प उत्तर', desc: 'जेमिनी उपलब्ध नहीं है। स्थानीय उत्तर दिखाया गया।' },
+        kn: { title: 'ಬದಲಿ ಉತ್ತರ', desc: 'ಜೆಮಿನಿ ಲಭ್ಯವಿಲ್ಲ. ಸ್ಥಳೀಯ ಉತ್ತರವನ್ನು ಬಳಸಿದೆ.' },
+      } as const;
+      const msg = loc[language] ?? loc.en;
+      toast({ title: msg.title, description: msg.desc });
+    } finally {
+      setLoading(false);
+    }
   };
 
   const clearChat = () => {
@@ -252,9 +263,9 @@ export const ChatbotAssistant = () => {
                   </div>
                 ))}
                 {/* Suggestions */}
-                <div className="flex flex-wrap gap-2 pt-2">
+        <div className="flex flex-wrap gap-2 pt-2">
                   {suggestions.map((s, idx) => (
-                    <Button key={idx} size="sm" variant="outline" onClick={() => handleSend(s)} className="text-xs">
+          <Button key={idx} size="sm" variant="outline" onClick={() => handleSend(s)} className="text-xs" disabled={loading}>
                       {s}
                     </Button>
                   ))}
@@ -276,10 +287,20 @@ export const ChatbotAssistant = () => {
                 placeholder={t('type_message')}
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
-                onKeyDown={(e) => { if (e.key === 'Enter') handleSend(); }}
+                onKeyDown={(e) => { if (e.key === 'Enter' && !loading) handleSend(); }}
+                disabled={loading}
               />
-              <Button onClick={() => handleSend()} className="shrink-0">
-                <Send className="h-4 w-4 mr-1" /> {t('send')}
+              <Button onClick={() => handleSend()} className="shrink-0" disabled={loading}>
+                {loading ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    {t('send')}
+                  </>
+                ) : (
+                  <>
+                    <Send className="h-4 w-4 mr-1" /> {t('send')}
+                  </>
+                )}
               </Button>
             </div>
           </div>

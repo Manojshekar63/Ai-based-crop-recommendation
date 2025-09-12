@@ -4,6 +4,7 @@ import { CropRecommendations } from "@/components/CropRecommendations";
 import { LocationDetectionForm } from "@/components/LocationDetectionForm";
 import { OptionSelector } from "@/components/OptionSelector";
 import { generateCropRecommendations } from "@/utils/cropRecommendation";
+import { predictCrop } from "@/utils/mlApi";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Leaf, Brain, BarChart3, FileBarChart } from "lucide-react";
 import { Link } from "react-router-dom";
@@ -38,14 +39,57 @@ const Index = () => {
   const handleFormSubmit = async (formData: FormData) => {
     setIsLoading(true);
     setFormData(formData);
-    
-    // Simulate AI processing delay
-    setTimeout(() => {
-      const recommendations = generateCropRecommendations(formData);
-      setResults(recommendations);
-      setCurrentStep("results");
-      setIsLoading(false);
-    }, 2000);
+
+    const useMl = ((import.meta as any).env?.VITE_USE_TF_ML || 'false') === 'true';
+    if (useMl) {
+      try {
+        const features = {
+          soil_ph: parseFloat(formData.pH),
+          nitrogen: parseFloat(formData.nitrogen),
+          phosphorus: parseFloat(formData.phosphorus),
+          potassium: parseFloat(formData.potassium),
+          organic_carbon: parseFloat((formData as any).organicCarbon || '0'),
+          soil_texture: formData.soilType,
+          rainfall: parseFloat(formData.rainfall),
+          temperature: parseFloat(formData.temperature),
+          humidity: parseFloat(formData.humidity),
+        };
+        const resp = await predictCrop(features);
+        const top = resp.recommended_crop;
+        const fallback = generateCropRecommendations(formData);
+        // Boost the top crop from ML in the displayed list
+        const boosted = [
+          {
+            name: top,
+            confidence: Math.round((resp.probabilities[top] || 0.9) * 100),
+            expectedYield: "--",
+            profitability: "High",
+            season: "--",
+            duration: "--",
+            waterRequirement: "Medium",
+            marketPrice: "--",
+            pros: ["Recommended by ML model"],
+            cons: [],
+          },
+          ...fallback.recommendations.filter((r: any) => r.name !== top).slice(0, 3),
+        ];
+        setResults({
+          recommendations: boosted,
+          weatherData: fallback.weatherData,
+        });
+        setCurrentStep("results");
+        setIsLoading(false);
+        return;
+      } catch (e) {
+        console.warn('ML API failed, falling back to rules', e);
+      }
+    }
+
+    // Fallback to rule-based engine
+    const recommendations = generateCropRecommendations(formData);
+    setResults(recommendations);
+    setCurrentStep("results");
+    setIsLoading(false);
   };
 
   const handleLocationSubmit = async (locationData: any) => {
@@ -59,6 +103,8 @@ const Index = () => {
       nitrogen: locationData.soilData.nitrogen.toString(),
       phosphorus: locationData.soilData.phosphorus.toString(),
       potassium: locationData.soilData.potassium.toString(),
+      // @ts-ignore add for ML features when available
+      organicCarbon: (locationData.soilData.organicCarbon ?? 0).toString(),
       rainfall: locationData.climateData.rainfall.toString(),
       temperature: locationData.climateData.temperature.toString(),
       humidity: locationData.climateData.humidity.toString(),
@@ -66,13 +112,51 @@ const Index = () => {
     
     setFormData(convertedFormData);
     
-    // Simulate AI processing delay
-    setTimeout(() => {
-      const recommendations = generateCropRecommendations(convertedFormData);
-      setResults(recommendations);
-      setCurrentStep("results");
-      setIsLoading(false);
-    }, 2000);
+    const useMl = ((import.meta as any).env?.VITE_USE_TF_ML || 'false') === 'true';
+    if (useMl) {
+      try {
+        const features = {
+          soil_ph: parseFloat(convertedFormData.pH),
+          nitrogen: parseFloat(convertedFormData.nitrogen),
+          phosphorus: parseFloat(convertedFormData.phosphorus),
+          potassium: parseFloat(convertedFormData.potassium),
+          organic_carbon: parseFloat((convertedFormData as any).organicCarbon || '0'),
+          soil_texture: convertedFormData.soilType,
+          rainfall: parseFloat(convertedFormData.rainfall),
+          temperature: parseFloat(convertedFormData.temperature),
+          humidity: parseFloat(convertedFormData.humidity),
+        };
+        const resp = await predictCrop(features);
+        const top = resp.recommended_crop;
+        const fallback = generateCropRecommendations(convertedFormData);
+        const boosted = [
+          {
+            name: top,
+            confidence: Math.round((resp.probabilities[top] || 0.9) * 100),
+            expectedYield: "--",
+            profitability: "High",
+            season: "--",
+            duration: "--",
+            waterRequirement: "Medium",
+            marketPrice: "--",
+            pros: ["Recommended by ML model"],
+            cons: [],
+          },
+          ...fallback.recommendations.filter((r: any) => r.name !== top).slice(0, 3),
+        ];
+        setResults({ recommendations: boosted, weatherData: fallback.weatherData });
+        setCurrentStep("results");
+        setIsLoading(false);
+        return;
+      } catch (e) {
+        console.warn('ML API failed, falling back to rules', e);
+      }
+    }
+
+    const recommendations = generateCropRecommendations(convertedFormData);
+    setResults(recommendations);
+    setCurrentStep("results");
+    setIsLoading(false);
   };
 
   const resetToWelcome = () => {

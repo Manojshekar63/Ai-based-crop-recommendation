@@ -71,3 +71,25 @@ Yes, you can!
 To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
 
 Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
+
+## Optional: TensorFlow ML API
+
+This repo includes a simple TensorFlow model and FastAPI server for crop prediction.
+
+Python setup:
+
+- Create and activate a virtual environment (venv or conda)
+- Install dependencies:
+	- pip install -r ml/requirements.txt
+- Train the model (saves to ml/tf_model):
+	- python ml/train_tensorflow.py --csv data/farm_data.csv --out ml/tf_model
+- Start the API (default http://localhost:5000):
+	- uvicorn ml.api_tf:app --host 0.0.0.0 --port 5000 --reload
+
+Frontend wiring:
+
+- Add to your Vite env (e.g., .env.local):
+	- VITE_USE_TF_ML=true
+	- VITE_ML_API_URL=http://localhost:5000
+
+The app will try the ML API first and gracefully fall back to the built-in rule-based engine if the API is unavailable.
